@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { highlights, readings } from "../../../db/schema";
-import { getChatGPTUser } from "../../chatgpt-auth";
+import { getPersonalUser } from "../../personal-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,7 @@ async function ownsReading(readingId: string, userId: string) {
 }
 
 export async function GET(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getPersonalUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
   const readingId = new URL(request.url).searchParams.get("readingId");
   if (!readingId || !(await ownsReading(readingId, user.userId))) return Response.json({ error: "Leitura não encontrada" }, { status: 404 });
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getPersonalUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
   const payload = await request.json() as { readingId?: string; source?: "pdf" | "markdown"; page?: number | null; quote?: string; color?: HighlightColor; note?: string; rects?: unknown };
   const quote = payload.quote?.trim().slice(0, 3000) ?? "";
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getPersonalUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "Destaque inválido" }, { status: 400 });

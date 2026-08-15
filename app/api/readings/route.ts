@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { getDb } from "../../../db";
 import { readings } from "../../../db/schema";
-import { getChatGPTUser } from "../../chatgpt-auth";
+import { getPersonalUser } from "../../personal-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ function bucket(): PdfBucket {
 }
 
 async function authenticatedUser() {
-  const user = await getChatGPTUser();
+  const user = await getPersonalUser();
   if (!user) return null;
   return user;
 }

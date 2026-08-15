@@ -1,11 +1,11 @@
-import { chatGPTSignInPath, getChatGPTUser } from "./chatgpt-auth";
+import LoginForm from "./LoginForm";
+import { getPersonalUser } from "./personal-auth";
 import ThemeToggle from "./ThemeToggle";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  const user = await getChatGPTUser();
-  const destination = user ? "/workspace" : chatGPTSignInPath("/workspace");
+  const user = await getPersonalUser();
 
   return (
     <main className="login-page">
@@ -20,9 +20,7 @@ export default async function LoginPage() {
         <div className="private-pill"><span>●</span> ESPAÇO ESTRITAMENTE PESSOAL</div>
         <h1 id="login-title">Meu espaço privado<br />para pensar.</h1>
         <p className="login-copy">Memórias, ideias e conexões reunidas em um ambiente particular de <strong>Pablo Maciel</strong>.</p>
-        <a className="login-button" href={destination}>
-          <span>{user ? "Abrir meu espaço" : "Entrar no meu espaço"}</span><i>→</i>
-        </a>
+        {user ? <a className="login-button" href="/workspace"><span>Abrir meu espaço</span><i>→</i></a> : <LoginForm />}
         {user && <p className="session-note"><span>✓</span> Identidade confirmada. Seu espaço está protegido.</p>}
         <div className="personal-notice">
           <span>♙</span>

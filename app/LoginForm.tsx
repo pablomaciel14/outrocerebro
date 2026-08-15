@@ -1,0 +1,34 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+
+export default function LoginForm() {
+  const [email, setEmail] = useState("pablomaciel.adv@gmail.com");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true); setError("");
+    try {
+      const response = await fetch("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Não foi possível entrar.");
+      window.location.href = "/workspace";
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível entrar.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <form className="login-form" onSubmit={submit}>
+    <label htmlFor="login-email">E-mail</label>
+    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+    <label htmlFor="login-password">Senha</label>
+    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required autoFocus />
+    {error && <p className="login-error" role="alert">{error}</p>}
+    <button className="login-button" type="submit" disabled={loading}><span>{loading ? "Verificando…" : "Entrar no meu espaço"}</span><i>→</i></button>
+  </form>;
+}

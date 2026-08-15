@@ -85,7 +85,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <button aria-label="Abrir comandos">›_</button>
           <ThemeToggle variant="icon" />
           <button aria-label="Alternar foco" onClick={() => setZen((value) => !value)}>◉</button>
-          <a className="avatar" aria-label={`Conta de ${displayName}`} title={`${displayName} · ${email}`} href="/signout-with-chatgpt?return_to=%2F">{displayName.charAt(0).toUpperCase()}</a>
+          <a className="avatar" aria-label={`Sair da conta de ${displayName}`} title={`${displayName} · ${email} · Sair`} href="/api/auth/logout">{displayName.charAt(0).toUpperCase()}</a>
         </div>
       </header>
 

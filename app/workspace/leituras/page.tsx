@@ -1,9 +1,9 @@
-import { requireChatGPTUser } from "../../chatgpt-auth";
+import { requirePersonalUser } from "../../personal-auth";
 import ReadingClient from "./ReadingClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReadingsPage() {
-  await requireChatGPTUser("/workspace/leituras");
+  await requirePersonalUser();
   return <ReadingClient />;
 }
