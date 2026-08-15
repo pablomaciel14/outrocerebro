@@ -19,3 +19,17 @@ export const readings = sqliteTable("readings", {
   index("idx_readings_user_updated").on(table.userId, table.updatedAt),
   index("idx_readings_user_status").on(table.userId, table.status),
 ]);
+
+export const highlights = sqliteTable("highlights", {
+  id: text("id").primaryKey(),
+  readingId: text("reading_id").notNull().references(() => readings.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  source: text("source", { enum: ["pdf", "markdown"] }).notNull(),
+  page: integer("page"),
+  quote: text("quote").notNull(),
+  color: text("color", { enum: ["yellow", "green", "blue", "pink", "violet"] }).notNull().default("yellow"),
+  note: text("note").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_highlights_user_reading").on(table.userId, table.readingId),
+]);

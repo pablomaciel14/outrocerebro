@@ -8,6 +8,9 @@ type Reading = {
   id: string; title: string; fileName: string; markdown: string; status: Status;
   currentPage: number; totalPages: number; totalSeconds: number; updatedAt: string;
 };
+type HighlightColor = "yellow" | "green" | "blue" | "pink" | "violet";
+type Highlight = { id: string; readingId: string; source: "pdf" | "markdown"; page: number | null; quote: string; color: HighlightColor; note: string; createdAt: string };
+type PendingHighlight = { quote: string; source: "pdf" | "markdown"; page: number | null };
 
 const statusLabels: Record<Status, string> = { wishlist: "Desejo ler", reading: "Lendo", read: "Já lido" };
 
@@ -37,18 +40,40 @@ async function extractMarkdown(file: File) {
   return { markdown: sections.join("\n"), totalPages: document.numPages, title };
 }
 
-function MarkdownView({ markdown }: { markdown: string }) {
+function plainWithLinks(text: string, keyPrefix: string) {
+  return text.split(/(https?:\/\/[^\s\])]+)/g).map((part, index) => part.startsWith("http")
+    ? <a key={`${keyPrefix}-${index}`} href={part} target="_blank" rel="noreferrer">{part}</a>
+    : part.replace(/\[|\]|\(|\)/g, ""));
+}
+
+function highlightedLine(text: string, highlights: Highlight[], keyPrefix: string) {
+  const matches = highlights.map((highlight) => ({ highlight, start: text.indexOf(highlight.quote) }))
+    .filter((match) => match.start >= 0).sort((a, b) => a.start - b.start);
+  if (!matches.length) return plainWithLinks(text, keyPrefix);
+  const output: React.ReactNode[] = [];
+  let cursor = 0;
+  matches.forEach(({ highlight, start }, index) => {
+    if (start < cursor) return;
+    output.push(...plainWithLinks(text.slice(cursor, start), `${keyPrefix}-pre-${index}`));
+    output.push(<mark key={`${keyPrefix}-mark-${index}`} className={`text-highlight highlight-${highlight.color}`} title={highlight.note || "Trecho destacado"}>{highlight.quote}</mark>);
+    cursor = start + highlight.quote.length;
+  });
+  output.push(...plainWithLinks(text.slice(cursor), `${keyPrefix}-tail`));
+  return output;
+}
+
+function MarkdownView({ markdown, highlights }: { markdown: string; highlights: Highlight[] }) {
   return <div className="markdown-view">{markdown.split("\n").map((line, index) => {
-    if (line.startsWith("# ")) return <h1 key={index}>{line.slice(2)}</h1>;
-    if (line.startsWith("## ")) return <h2 key={index}>{line.slice(3)}</h2>;
-    if (line.startsWith("> ")) return <blockquote key={index}>{line.slice(2)}</blockquote>;
-    const parts = line.split(/(https?:\/\/[^\s\])]+)/g);
-    return <p key={index}>{parts.map((part, partIndex) => part.startsWith("http") ? <a key={partIndex} href={part} target="_blank" rel="noreferrer">{part}</a> : part.replace(/\[|\]|\(|\)/g, ""))}</p>;
+    if (line.startsWith("# ")) return <h1 key={index}>{highlightedLine(line.slice(2), highlights, `h1-${index}`)}</h1>;
+    if (line.startsWith("## ")) return <h2 key={index}>{highlightedLine(line.slice(3), highlights, `h2-${index}`)}</h2>;
+    if (line.startsWith("> ")) return <blockquote key={index}>{highlightedLine(line.slice(2), highlights, `bq-${index}`)}</blockquote>;
+    return <p key={index}>{highlightedLine(line, highlights, `p-${index}`)}</p>;
   })}</div>;
 }
 
-function PdfCanvas({ reading, page, onLoaded }: { reading: Reading; page: number; onLoaded: (count: number) => void }) {
+function PdfCanvas({ reading, page, highlights, onLoaded }: { reading: Reading; page: number; highlights: Highlight[]; onLoaded: (count: number) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const textLayerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -76,15 +101,27 @@ function PdfCanvas({ reading, page, onLoaded }: { reading: Reading; page: number
         const context = canvas.getContext("2d");
         if (!context) return;
         await pdfPage.render({ canvasContext: context, canvas, viewport }).promise;
+        const textLayerContainer = textLayerRef.current;
+        if (textLayerContainer && !cancelled) {
+          textLayerContainer.replaceChildren();
+          textLayerContainer.style.setProperty("--scale-factor", String(viewport.scale));
+          const textLayer = new pdfjs.TextLayer({ textContentSource: await pdfPage.getTextContent(), container: textLayerContainer, viewport });
+          await textLayer.render();
+          const pageHighlights = highlights.filter((highlight) => highlight.source === "pdf" && highlight.page === page);
+          textLayerContainer.querySelectorAll("span").forEach((span) => {
+            const hit = pageHighlights.find((highlight) => span.textContent?.includes(highlight.quote));
+            if (hit) span.classList.add("pdf-highlight", `highlight-${hit.color}`);
+          });
+        }
       } catch (reason) {
         if (!cancelled) setError(reason instanceof Error ? reason.message : "Falha ao renderizar PDF.");
       }
     })();
     return () => { cancelled = true; task?.destroy().catch(() => undefined); };
-  }, [reading.id, page, onLoaded]);
+  }, [reading.id, page, highlights, onLoaded]);
 
   if (error) return <div className="reader-error">{error}</div>;
-  return <canvas ref={canvasRef} className="pdf-canvas" aria-label={`Página ${page} de ${reading.title}`} />;
+  return <div className="pdf-page-wrap" data-highlight-source="pdf" data-highlight-page={page}><canvas ref={canvasRef} className="pdf-canvas" aria-label={`Página ${page} de ${reading.title}`} /><div ref={textLayerRef} className="textLayer pdf-text-layer" /></div>;
 }
 
 export default function ReadingClient() {
@@ -96,8 +133,14 @@ export default function ReadingClient() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("Carregando biblioteca...");
   const [lightMode, setLightMode] = useState(false);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [pendingHighlight, setPendingHighlight] = useState<PendingHighlight | null>(null);
+  const [highlightColor, setHighlightColor] = useState<HighlightColor>("yellow");
+  const [highlightNote, setHighlightNote] = useState("");
+  const [savingHighlight, setSavingHighlight] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<Reading[]>([]);
+  const documentStageRef = useRef<HTMLDivElement>(null);
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
   useEffect(() => { itemsRef.current = items; }, [items]);
@@ -116,6 +159,45 @@ export default function ReadingClient() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  useEffect(() => {
+    if (!selectedId) { setHighlights([]); return; }
+    let cancelled = false;
+    fetch(`/api/highlights?readingId=${encodeURIComponent(selectedId)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Falha ao carregar destaques")))
+      .then((data: { highlights: Highlight[] }) => { if (!cancelled) setHighlights(data.highlights); })
+      .catch(() => { if (!cancelled) setHighlights([]); });
+    return () => { cancelled = true; };
+  }, [selectedId]);
+
+  const captureSelection = () => {
+    const selection = window.getSelection();
+    const stage = documentStageRef.current;
+    if (!selection || selection.isCollapsed || !stage || !selection.anchorNode || !stage.contains(selection.anchorNode)) return;
+    const quote = selection.toString().replace(/\s+/g, " ").trim();
+    if (quote.length < 2) return;
+    const element = selection.anchorNode.nodeType === Node.ELEMENT_NODE ? selection.anchorNode as Element : selection.anchorNode.parentElement;
+    const pdfPage = element?.closest<HTMLElement>("[data-highlight-source='pdf']");
+    setPendingHighlight({ quote: quote.slice(0, 3000), source: tab === "pdf" ? "pdf" : "markdown", page: pdfPage ? Number(pdfPage.dataset.highlightPage) : null });
+    setHighlightNote("");
+  };
+
+  const saveHighlight = async () => {
+    if (!selected || !pendingHighlight) return;
+    setSavingHighlight(true);
+    try {
+      const response = await fetch("/api/highlights", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ readingId: selected.id, ...pendingHighlight, color: highlightColor, note: highlightNote }) });
+      const data = await response.json() as { highlight?: Highlight; error?: string };
+      if (!response.ok || !data.highlight) throw new Error(data.error ?? "Não foi possível salvar o destaque.");
+      setHighlights((current) => [data.highlight!, ...current]); setPendingHighlight(null); setHighlightNote(""); window.getSelection()?.removeAllRanges();
+    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Não foi possível salvar o destaque."); }
+    finally { setSavingHighlight(false); }
+  };
+
+  const deleteHighlight = async (id: string) => {
+    const response = await fetch(`/api/highlights?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (response.ok) setHighlights((current) => current.filter((highlight) => highlight.id !== id));
+  };
 
   const persist = useCallback(async (id: string, changes: Partial<Pick<Reading, "status" | "currentPage" | "totalSeconds">>) => {
     setItems((current) => current.map((item) => item.id === id ? { ...item, ...changes } : item));
@@ -200,10 +282,18 @@ export default function ReadingClient() {
             </select>
           </div>
           <div className="reader-tabs"><button className={tab === "pdf" ? "active" : ""} onClick={() => setTab("pdf")}>PDF</button><button className={tab === "markdown" ? "active" : ""} onClick={() => setTab("markdown")}>Markdown</button><button className={tab === "graph" ? "active" : ""} onClick={() => setTab("graph")}>Conexões</button></div>
-          <div className="document-stage">
-            {tab === "pdf" && <PdfCanvas reading={selected} page={selected.currentPage} onLoaded={(count) => count !== selected.totalPages && setItems((current) => current.map((item) => item.id === selected.id ? { ...item, totalPages: count } : item))} />}
-            {tab === "markdown" && <MarkdownView markdown={selected.markdown} />}
+          <div ref={documentStageRef} className="document-stage" onMouseUp={captureSelection}>
+            {tab === "pdf" && <PdfCanvas reading={selected} page={selected.currentPage} highlights={highlights} onLoaded={(count) => count !== selected.totalPages && setItems((current) => current.map((item) => item.id === selected.id ? { ...item, totalPages: count } : item))} />}
+            {tab === "markdown" && <div data-highlight-source="markdown"><MarkdownView markdown={selected.markdown} highlights={highlights.filter((highlight) => highlight.source === "markdown")} /></div>}
             {tab === "graph" && <div className="reading-graph"><div className="graph-center">{selected.title.slice(0, 32)}</div>{(domains.length ? domains : ["Sem links externos"]).map((domain, index) => <div key={domain} className={`domain-node domain-${index + 1}`}>{domain}</div>)}</div>}
+            {pendingHighlight && <div className="highlight-composer" onMouseUp={(event) => event.stopPropagation()}>
+              <div className="selected-quote">“{pendingHighlight.quote.slice(0, 180)}{pendingHighlight.quote.length > 180 ? "…" : ""}”</div>
+              <div className="highlight-palette">
+                {(["yellow", "green", "blue", "pink", "violet"] as HighlightColor[]).map((color) => <button key={color} className={`color-dot highlight-${color} ${highlightColor === color ? "active" : ""}`} onClick={() => setHighlightColor(color)} aria-label={`Destaque ${color}`} />)}
+              </div>
+              <textarea value={highlightNote} onChange={(event) => setHighlightNote(event.target.value)} placeholder="Adicionar uma nota a este trecho (opcional)…" aria-label="Nota do destaque" />
+              <div className="highlight-actions"><button onClick={() => setPendingHighlight(null)}>Cancelar</button><button className="save" disabled={savingHighlight} onClick={saveHighlight}>{savingHighlight ? "Salvando…" : "Destacar"}</button></div>
+            </div>}
           </div>
           <div className="page-controls"><button disabled={selected.currentPage <= 1} onClick={() => changePage(selected.currentPage - 1)}>← Anterior</button><span>Página <b>{selected.currentPage}</b> de {selected.totalPages}</span><button disabled={selected.currentPage >= selected.totalPages} onClick={() => changePage(selected.currentPage + 1)}>Próxima →</button></div>
         </section>
@@ -214,6 +304,13 @@ export default function ReadingClient() {
           <div className="resume-card"><span>↗</span><p><b>Retomada automática</b>Ao reabrir, você continuará na página {selected.currentPage}.</p></div>
           <button className="mark-read" onClick={() => persist(selected.id, { status: selected.status === "read" ? "reading" : "read" })}>{selected.status === "read" ? "↶ Voltar para Lendo" : "✓ Marcar como já lido"}</button>
           <div className="markdown-summary"><small>REGISTRO CRIADO</small><p><span>#</span> {selected.title}</p><p><span>##</span> {selected.totalPages} páginas em Markdown</p><p><span>↗</span> {domains.length} links conectados</p></div>
+          <div className="annotations-panel"><div className="annotations-heading"><small>DESTAQUES E NOTAS</small><b>{highlights.length}</b></div>
+            <p className="annotations-help">Selecione um trecho no PDF ou Markdown para destacar.</p>
+            <div className="annotations-list">{highlights.map((highlight) => <article key={highlight.id} className={`annotation-card annotation-${highlight.color}`}>
+              <div><i className={`color-dot highlight-${highlight.color}`} /><small>{highlight.source === "pdf" ? `PDF · página ${highlight.page}` : "Markdown"}</small><button onClick={() => deleteHighlight(highlight.id)} aria-label="Excluir destaque">×</button></div>
+              <blockquote>“{highlight.quote}”</blockquote>{highlight.note && <p>{highlight.note}</p>}
+            </article>)}</div>
+          </div>
         </aside>
       </>}
     </main>
