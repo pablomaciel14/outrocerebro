@@ -85,10 +85,25 @@ function MarkdownView({ markdown, highlights, fontSize, lineHeight, contentWidth
   })}</div>;
 }
 
-function PdfCanvas({ reading, page, highlights, scale, onLoaded }: { reading: Reading; page: number; highlights: Highlight[]; scale: number; onLoaded: (count: number) => void }) {
+function PdfCanvas({ reading, page, highlights, scale, fitWidth, onLoaded }: { reading: Reading; page: number; highlights: Highlight[]; scale: number; fitWidth: boolean; onLoaded: (count: number) => void }) {
+  const pageWrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
+  const onLoadedRef = useRef(onLoaded);
   const [error, setError] = useState("");
+  const [availableWidth, setAvailableWidth] = useState(0);
+
+  useEffect(() => { onLoadedRef.current = onLoaded; }, [onLoaded]);
+
+  useEffect(() => {
+    const pageWrap = pageWrapRef.current;
+    if (!pageWrap || !fitWidth) return;
+    const updateWidth = () => setAvailableWidth(Math.floor(pageWrap.clientWidth));
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(pageWrap);
+    return () => observer.disconnect();
+  }, [fitWidth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,9 +120,11 @@ function PdfCanvas({ reading, page, highlights, scale, onLoaded }: { reading: Re
         task = loadingTask;
         const pdf = await loadingTask.promise;
         if (cancelled) return;
-        onLoaded(pdf.numPages);
+        onLoadedRef.current(pdf.numPages);
         const pdfPage = await pdf.getPage(Math.min(page, pdf.numPages));
-        const viewport = pdfPage.getViewport({ scale });
+        const naturalViewport = pdfPage.getViewport({ scale: 1 });
+        const fittedScale = fitWidth && availableWidth > 0 ? availableWidth / naturalViewport.width : scale;
+        const viewport = pdfPage.getViewport({ scale: fittedScale });
         const canvas = canvasRef.current;
         if (!canvas || cancelled) return;
         canvas.width = viewport.width;
@@ -132,12 +149,12 @@ function PdfCanvas({ reading, page, highlights, scale, onLoaded }: { reading: Re
       }
     })();
     return () => { cancelled = true; task?.destroy().catch(() => undefined); };
-  }, [reading.id, page, highlights, scale, onLoaded]);
+  }, [reading.id, page, highlights, scale, fitWidth, availableWidth]);
 
   if (error) return <div className="reader-error">{error}</div>;
   const pageRects = highlights.filter((highlight) => highlight.source === "pdf" && highlight.page === page)
     .flatMap((highlight) => parseHighlightRects(highlight.rects).map((rect, index) => ({ ...rect, color: highlight.color, key: `${highlight.id}-${index}` })));
-  return <div className="pdf-page-wrap" data-highlight-source="pdf" data-highlight-page={page}>
+  return <div ref={pageWrapRef} className={`pdf-page-wrap${fitWidth ? " fit-width" : ""}`} data-highlight-source="pdf" data-highlight-page={page}>
     <canvas ref={canvasRef} className="pdf-canvas" aria-label={`Página ${page} de ${reading.title}`} />
     <div className="pdf-highlight-overlays" aria-hidden="true">{pageRects.map((rect) => <i key={rect.key} className={`pdf-highlight-rect highlight-${rect.color}`} style={{ left: `${rect.x * 100}%`, top: `${rect.y * 100}%`, width: `${rect.width * 100}%`, height: `${rect.height * 100}%` }} />)}</div>
     <div ref={textLayerRef} className="textLayer pdf-text-layer" />
@@ -163,6 +180,7 @@ export default function ReadingClient() {
   const [chromeVisible, setChromeVisible] = useState(true);
   const [readerTheme, setReaderTheme] = useState<ReaderTheme>("paper");
   const [zoom, setZoom] = useState(1.45);
+  const [fitWidth, setFitWidth] = useState(true);
   const [spread, setSpread] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -173,6 +191,7 @@ export default function ReadingClient() {
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<Reading[]>([]);
   const documentStageRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const currentPageBookmarked = Boolean(selected && bookmarks.some((bookmark) => bookmark.page === selected.currentPage));
 
@@ -287,6 +306,15 @@ export default function ReadingClient() {
     return () => { window.clearInterval(interval); window.clearInterval(sync); };
   }, [running, selectedId, persist]);
 
+  const openReading = (id: string) => {
+    setSelectedId(id);
+    setTab("pdf");
+    if (!window.matchMedia("(max-width: 760px)").matches) return;
+    setSpread(false);
+    setFitWidth(true);
+    setFocusMode(true);
+  };
+
   const onUpload = async (file?: File) => {
     if (!file) return;
     if (file.type !== "application/pdf") { setMessage("Selecione um arquivo PDF."); return; }
@@ -298,7 +326,7 @@ export default function ReadingClient() {
       const response = await fetch("/api/readings", { method: "POST", body: form });
       const data = await response.json() as { reading?: Reading; error?: string };
       if (!response.ok || !data.reading) throw new Error(data.error ?? "Falha no upload.");
-      setItems((current) => [data.reading!, ...current]); setSelectedId(data.reading.id); setTab("pdf"); setMessage("");
+      setItems((current) => [data.reading!, ...current]); openReading(data.reading.id); setMessage("");
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Não foi possível importar o PDF."); }
     finally { setUploading(false); if (inputRef.current) inputRef.current.value = ""; }
   };
@@ -313,7 +341,41 @@ export default function ReadingClient() {
   const changePage = (next: number) => {
     if (!selected) return;
     const page = Math.max(1, Math.min(selected.totalPages, next));
+    if (page === selected.currentPage) return;
     persist(selected.id, { currentPage: page, status: selected.status === "wishlist" ? "reading" : selected.status });
+    window.requestAnimationFrame(() => documentStageRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+
+  const onReaderTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (tab !== "pdf" || event.touches.length !== 1) { touchStartRef.current = null; return; }
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+  };
+
+  const onReaderTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || tab !== "pdf" || event.changedTouches.length !== 1) return;
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) { captureSelection(); return; }
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a, input, select, textarea, .highlight-composer")) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const horizontalSwipe = Math.abs(deltaX) >= 52 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2;
+    if (horizontalSwipe) {
+      changePage(selected.currentPage + (deltaX < 0 ? 1 : -1));
+      return;
+    }
+    const isTap = Math.abs(deltaX) < 12 && Math.abs(deltaY) < 12 && Date.now() - start.time < 500;
+    if (!isTap) return;
+    const bounds = documentStageRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const position = (touch.clientX - bounds.left) / bounds.width;
+    if (position <= .34) changePage(selected.currentPage - 1);
+    else if (position >= .66) changePage(selected.currentPage + 1);
+    else if (focusMode) setChromeVisible((value) => !value);
   };
 
   const toggleBookmark = useCallback(async () => {
@@ -374,7 +436,7 @@ export default function ReadingClient() {
         <div className="library-list">
           {filtered.map((item) => {
             const progress = Math.round((item.currentPage / item.totalPages) * 100);
-            return <button key={item.id} className={item.id === selectedId ? "library-item active" : "library-item"} onClick={() => { setSelectedId(item.id); setTab("pdf"); }}>
+            return <button key={item.id} className={item.id === selectedId ? "library-item active" : "library-item"} onClick={() => openReading(item.id)}>
               <i>PDF</i><span><b>{item.title}</b><small>{statusLabels[item.status]} · pág. {item.currentPage}/{item.totalPages}</small><em><u style={{ width: `${progress}%` }} /></em></span>
             </button>;
           })}
@@ -403,18 +465,18 @@ export default function ReadingClient() {
           </div>
           <div className="reader-tabs">
             <button className={tab === "pdf" ? "active" : ""} onClick={() => setTab("pdf")}>Documento</button><button className={tab === "markdown" ? "active" : ""} onClick={() => setTab("markdown")}>Leitura</button><button className={tab === "graph" ? "active" : ""} onClick={() => setTab("graph")}>Conexões</button>
-            {tab === "pdf" && <div className="document-tools"><button onClick={() => setZoom((value) => Math.max(.7, value - .15))}>−</button><span>{Math.round((zoom / 1.45) * 100)}%</span><button onClick={() => setZoom((value) => Math.min(2.4, value + .15))}>＋</button><button onClick={() => setZoom(1)}>Página</button><button onClick={() => setZoom(1.45)}>Largura</button><button className={spread ? "active" : ""} onClick={() => setSpread((value) => !value)}>2 páginas</button></div>}
+            {tab === "pdf" && <div className="document-tools"><button onClick={() => { setFitWidth(false); setZoom((value) => Math.max(.7, value - .15)); }}>−</button><span>{fitWidth ? "Ajustado" : `${Math.round((zoom / 1.45) * 100)}%`}</span><button onClick={() => { setFitWidth(false); setZoom((value) => Math.min(2.4, value + .15)); }}>＋</button><button className={fitWidth ? "active" : ""} onClick={() => { setSpread(false); setFitWidth(true); }}>Largura</button><button className={spread ? "active" : ""} onClick={() => { setFitWidth(false); setSpread((value) => !value); }}>2 páginas</button></div>}
           </div>
           {searchOpen && <aside className="reader-popover search-popover"><div><b>Buscar no livro</b><button onClick={() => setSearchOpen(false)}>×</button></div><input autoFocus value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Palavra ou frase…" />
             <small>{searchQuery.trim().length < 2 ? "Digite ao menos 2 caracteres" : `${searchResults.length} resultado(s)`}</small>
             <div>{searchResults.map((result) => <button key={result.page} onClick={() => { changePage(result.page); setSearchOpen(false); }}><b>Página {result.page}</b><span>{result.excerpt}</span></button>)}</div>
           </aside>}
           {settingsOpen && <aside className="reader-popover settings-popover"><div><b>Aparência da leitura</b><button onClick={() => setSettingsOpen(false)}>×</button></div><label>Tema<select value={readerTheme} onChange={(event) => setReaderTheme(event.target.value as ReaderTheme)}><option value="light">Claro</option><option value="paper">Papel</option><option value="sepia">Sépia</option><option value="dark">Escuro</option><option value="midnight">Meia-noite</option></select></label><label>Tamanho do texto<input type="range" min="14" max="28" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} /></label><label>Entrelinhas<input type="range" min="1.35" max="2.2" step=".05" value={lineHeight} onChange={(event) => setLineHeight(Number(event.target.value))} /></label><label>Largura da coluna<input type="range" min="540" max="1000" step="20" value={contentWidth} onChange={(event) => setContentWidth(Number(event.target.value))} /></label></aside>}
-          <div ref={documentStageRef} className="document-stage" onMouseUp={captureSelection}>
-            {tab === "pdf" && <div className={spread ? "pdf-spread" : "pdf-single"}><PdfCanvas reading={selected} page={selected.currentPage} scale={zoom} highlights={highlights} onLoaded={(count) => count !== selected.totalPages && setItems((current) => current.map((item) => item.id === selected.id ? { ...item, totalPages: count } : item))} />{spread && selected.currentPage < selected.totalPages && <PdfCanvas reading={selected} page={selected.currentPage + 1} scale={zoom} highlights={highlights} onLoaded={() => undefined} />}</div>}
+          <div ref={documentStageRef} className="document-stage" role="application" tabIndex={0} aria-label="Leitor de PDF: use as setas, toque nas laterais ou deslize para mudar de página" onMouseUp={(event) => { if (!(event.target as HTMLElement).closest(".highlight-composer")) captureSelection(); }} onTouchStart={onReaderTouchStart} onTouchEnd={onReaderTouchEnd}>
+            {tab === "pdf" && <><div className="mobile-page-hint" aria-hidden="true">Toque nas laterais ou deslize para mudar de página</div><div className={spread ? "pdf-spread" : "pdf-single"}><PdfCanvas reading={selected} page={selected.currentPage} scale={zoom} fitWidth={fitWidth} highlights={highlights} onLoaded={(count) => count !== selected.totalPages && setItems((current) => current.map((item) => item.id === selected.id ? { ...item, totalPages: count } : item))} />{spread && selected.currentPage < selected.totalPages && <PdfCanvas reading={selected} page={selected.currentPage + 1} scale={zoom} fitWidth={false} highlights={highlights} onLoaded={() => undefined} />}</div></>}
             {tab === "markdown" && <div data-highlight-source="markdown"><MarkdownView markdown={selected.markdown} highlights={highlights.filter((highlight) => highlight.source === "markdown")} fontSize={fontSize} lineHeight={lineHeight} contentWidth={contentWidth} /></div>}
             {tab === "graph" && <div className="reading-graph"><div className="graph-center">{selected.title.slice(0, 32)}</div>{(domains.length ? domains : ["Sem links externos"]).map((domain, index) => <div key={domain} className={`domain-node domain-${index + 1}`}>{domain}</div>)}</div>}
-            {pendingHighlight && <div className="highlight-composer" onMouseUp={(event) => event.stopPropagation()}>
+            {pendingHighlight && <div className="highlight-composer" role="dialog" aria-label="Criar destaque">
               <div className="selected-quote">“{pendingHighlight.quote.slice(0, 180)}{pendingHighlight.quote.length > 180 ? "…" : ""}”</div>
               <div className="highlight-palette">
                 {(["yellow", "green", "blue", "pink", "violet"] as HighlightColor[]).map((color) => <button key={color} className={`color-dot highlight-${color} ${highlightColor === color ? "active" : ""}`} onClick={() => setHighlightColor(color)} aria-label={`Destaque ${color}`} />)}
