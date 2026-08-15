@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = host.includes("localhost") ? "http" : "https";
-  const image = `${protocol}://${host}/og-image.jpg`;
+  const image = `${protocol}://${host}/og-premium.jpg`;
 
   return {
     title: "Outro Cérebro — Seu espaço privado para pensar",
