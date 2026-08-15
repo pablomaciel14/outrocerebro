@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "destination": "https://outro-cerebro-pessoal.pablomaciel-adv.chatgpt.site/:path*",
+      "permanent": false
+    }
+  ]
+}

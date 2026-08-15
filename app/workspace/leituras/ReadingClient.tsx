@@ -12,6 +12,8 @@ type HighlightColor = "yellow" | "green" | "blue" | "pink" | "violet";
 type HighlightRect = { x: number; y: number; width: number; height: number };
 type Highlight = { id: string; readingId: string; source: "pdf" | "markdown"; page: number | null; quote: string; color: HighlightColor; note: string; rects: string; createdAt: string };
 type PendingHighlight = { quote: string; source: "pdf" | "markdown"; page: number | null; rects: HighlightRect[] };
+type Bookmark = { id: string; readingId: string; page: number; createdAt: string };
+type ReaderTheme = "light" | "paper" | "sepia" | "dark" | "midnight";
 
 const statusLabels: Record<Status, string> = { wishlist: "Desejo ler", reading: "Lendo", read: "Já lido" };
 
@@ -74,8 +76,8 @@ function parseHighlightRects(value: string | undefined): HighlightRect[] {
   }
 }
 
-function MarkdownView({ markdown, highlights }: { markdown: string; highlights: Highlight[] }) {
-  return <div className="markdown-view">{markdown.split("\n").map((line, index) => {
+function MarkdownView({ markdown, highlights, fontSize, lineHeight, contentWidth }: { markdown: string; highlights: Highlight[]; fontSize: number; lineHeight: number; contentWidth: number }) {
+  return <div className="markdown-view" style={{ fontSize: `${fontSize}px`, lineHeight, maxWidth: `${contentWidth}px` }}>{markdown.split("\n").map((line, index) => {
     if (line.startsWith("# ")) return <h1 key={index}>{highlightedLine(line.slice(2), highlights, `h1-${index}`)}</h1>;
     if (line.startsWith("## ")) return <h2 key={index}>{highlightedLine(line.slice(3), highlights, `h2-${index}`)}</h2>;
     if (line.startsWith("> ")) return <blockquote key={index}>{highlightedLine(line.slice(2), highlights, `bq-${index}`)}</blockquote>;
@@ -83,7 +85,7 @@ function MarkdownView({ markdown, highlights }: { markdown: string; highlights: 
   })}</div>;
 }
 
-function PdfCanvas({ reading, page, highlights, onLoaded }: { reading: Reading; page: number; highlights: Highlight[]; onLoaded: (count: number) => void }) {
+function PdfCanvas({ reading, page, highlights, scale, onLoaded }: { reading: Reading; page: number; highlights: Highlight[]; scale: number; onLoaded: (count: number) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
@@ -105,7 +107,7 @@ function PdfCanvas({ reading, page, highlights, onLoaded }: { reading: Reading; 
         if (cancelled) return;
         onLoaded(pdf.numPages);
         const pdfPage = await pdf.getPage(Math.min(page, pdf.numPages));
-        const viewport = pdfPage.getViewport({ scale: 1.45 });
+        const viewport = pdfPage.getViewport({ scale });
         const canvas = canvasRef.current;
         if (!canvas || cancelled) return;
         canvas.width = viewport.width;
@@ -130,7 +132,7 @@ function PdfCanvas({ reading, page, highlights, onLoaded }: { reading: Reading; 
       }
     })();
     return () => { cancelled = true; task?.destroy().catch(() => undefined); };
-  }, [reading.id, page, highlights, onLoaded]);
+  }, [reading.id, page, highlights, scale, onLoaded]);
 
   if (error) return <div className="reader-error">{error}</div>;
   const pageRects = highlights.filter((highlight) => highlight.source === "pdf" && highlight.page === page)
@@ -156,18 +158,42 @@ export default function ReadingClient() {
   const [highlightColor, setHighlightColor] = useState<HighlightColor>("yellow");
   const [highlightNote, setHighlightNote] = useState("");
   const [savingHighlight, setSavingHighlight] = useState(false);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [focusMode, setFocusMode] = useState(false);
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const [readerTheme, setReaderTheme] = useState<ReaderTheme>("paper");
+  const [zoom, setZoom] = useState(1.45);
+  const [spread, setSpread] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [fontSize, setFontSize] = useState(18);
+  const [lineHeight, setLineHeight] = useState(1.75);
+  const [contentWidth, setContentWidth] = useState(760);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<Reading[]>([]);
   const documentStageRef = useRef<HTMLDivElement>(null);
   const selected = items.find((item) => item.id === selectedId) ?? null;
+  const currentPageBookmarked = Boolean(selected && bookmarks.some((bookmark) => bookmark.page === selected.currentPage));
 
   useEffect(() => { itemsRef.current = items; }, [items]);
   useEffect(() => {
     setLightMode(window.localStorage.getItem("outro-cerebro-reading-theme") === "light");
+    setReaderTheme((window.localStorage.getItem("outro-cerebro-reader-theme") as ReaderTheme | null) ?? "paper");
+    setFontSize(Number(window.localStorage.getItem("outro-cerebro-reader-font-size")) || 18);
+    setLineHeight(Number(window.localStorage.getItem("outro-cerebro-reader-line-height")) || 1.75);
+    setContentWidth(Number(window.localStorage.getItem("outro-cerebro-reader-width")) || 760);
     const sync = (event: Event) => setLightMode((event as CustomEvent<string>).detail === "light");
     window.addEventListener("outro-cerebro-theme", sync);
     return () => window.removeEventListener("outro-cerebro-theme", sync);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("outro-cerebro-reader-theme", readerTheme);
+    window.localStorage.setItem("outro-cerebro-reader-font-size", String(fontSize));
+    window.localStorage.setItem("outro-cerebro-reader-line-height", String(lineHeight));
+    window.localStorage.setItem("outro-cerebro-reader-width", String(contentWidth));
+  }, [readerTheme, fontSize, lineHeight, contentWidth]);
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/readings", { cache: "no-store" });
@@ -187,6 +213,23 @@ export default function ReadingClient() {
       .catch(() => { if (!cancelled) setHighlights([]); });
     return () => { cancelled = true; };
   }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) { setBookmarks([]); return; }
+    fetch(`/api/bookmarks?readingId=${encodeURIComponent(selectedId)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((data: { bookmarks: Bookmark[] }) => setBookmarks(data.bookmarks))
+      .catch(() => setBookmarks([]));
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!focusMode) { setChromeVisible(true); return; }
+    let timeout = window.setTimeout(() => setChromeVisible(false), 2600);
+    const reveal = () => { setChromeVisible(true); window.clearTimeout(timeout); timeout = window.setTimeout(() => setChromeVisible(false), 2600); };
+    window.addEventListener("mousemove", reveal);
+    window.addEventListener("keydown", reveal);
+    return () => { window.clearTimeout(timeout); window.removeEventListener("mousemove", reveal); window.removeEventListener("keydown", reveal); };
+  }, [focusMode]);
 
   const captureSelection = () => {
     const selection = window.getSelection();
@@ -273,8 +316,50 @@ export default function ReadingClient() {
     persist(selected.id, { currentPage: page, status: selected.status === "wishlist" ? "reading" : selected.status });
   };
 
+  const toggleBookmark = useCallback(async () => {
+    if (!selected) return;
+    const exists = bookmarks.some((bookmark) => bookmark.page === selected.currentPage);
+    if (exists) {
+      const response = await fetch(`/api/bookmarks?readingId=${encodeURIComponent(selected.id)}&page=${selected.currentPage}`, { method: "DELETE" });
+      if (response.ok) setBookmarks((current) => current.filter((bookmark) => bookmark.page !== selected.currentPage));
+      return;
+    }
+    const response = await fetch("/api/bookmarks", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ readingId: selected.id, page: selected.currentPage }) });
+    const data = await response.json() as { bookmark?: Bookmark };
+    if (response.ok && data.bookmark) setBookmarks((current) => [...current, data.bookmark!].sort((a, b) => a.page - b.page));
+  }, [selected, bookmarks]);
+
+  const searchResults = useMemo(() => {
+    if (!selected || searchQuery.trim().length < 2) return [];
+    const query = searchQuery.trim().toLocaleLowerCase("pt-BR");
+    return selected.markdown.split(/(?=## Página \d+)/i).flatMap((section) => {
+      const page = Number(section.match(/^## Página (\d+)/i)?.[1]);
+      const normalized = section.toLocaleLowerCase("pt-BR");
+      const position = normalized.indexOf(query);
+      if (!page || position < 0) return [];
+      return [{ page, excerpt: section.slice(Math.max(0, position - 55), position + query.length + 95).replace(/[#\n]+/g, " ").trim() }];
+    }).slice(0, 30);
+  }, [selected, searchQuery]);
+
+  useEffect(() => {
+    const shortcuts = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, select") && event.key !== "Escape") return;
+      if (event.key === "ArrowLeft") changePage((selected?.currentPage ?? 1) - 1);
+      if (event.key === "ArrowRight") changePage((selected?.currentPage ?? 1) + 1);
+      if (event.key.toLowerCase() === "f") setFocusMode((value) => !value);
+      if (event.key.toLowerCase() === "b") toggleBookmark();
+      if (event.key === "/") { event.preventDefault(); setSearchOpen(true); }
+      if (event.key === "+" || event.key === "=") setZoom((value) => Math.min(2.4, value + .15));
+      if (event.key === "-") setZoom((value) => Math.max(.7, value - .15));
+      if (event.key === "Escape") { setSearchOpen(false); setSettingsOpen(false); setFocusMode(false); }
+    };
+    window.addEventListener("keydown", shortcuts);
+    return () => window.removeEventListener("keydown", shortcuts);
+  }, [selected, toggleBookmark]);
+
   return (
-    <main className={lightMode ? "reading-shell light-reading" : "reading-shell"}>
+    <main className={`reading-shell reader-theme-${readerTheme}${lightMode ? " light-reading" : ""}${focusMode ? " immersive-reader" : ""}${focusMode && !chromeVisible ? " chrome-hidden" : ""}`}>
       <header className="reading-topbar">
         <a href="/workspace" className="reading-brand"><img src="/outro-cerebro-symbol.webp" alt="" aria-hidden="true" /><b>Outro Cérebro</b></a>
         <div><span className="saved-indicator">● Progresso salvo</span><ThemeToggle /><a href="/workspace">Voltar às notas</a></div>
@@ -304,15 +389,30 @@ export default function ReadingClient() {
       </section> : <>
         <section className="reader-stage">
           <div className="reader-heading">
-            <div><small>{statusLabels[selected.status]}</small><h1>{selected.title}</h1></div>
-            <select value={selected.status} onChange={(event) => persist(selected.id, { status: event.target.value as Status })} aria-label="Estado da leitura">
-              <option value="wishlist">Desejo ler</option><option value="reading">Lendo</option><option value="read">Já lido</option>
-            </select>
+            <button className="reader-back" onClick={() => setSelectedId(null)} aria-label="Voltar à biblioteca">←</button>
+            <div className="reader-title"><small>{statusLabels[selected.status]}</small><h1>{selected.title}</h1></div>
+            <div className="reader-tools">
+              <button className={currentPageBookmarked ? "active" : ""} onClick={toggleBookmark} title="Marcar página (B)">◆</button>
+              <button className={searchOpen ? "active" : ""} onClick={() => setSearchOpen((value) => !value)} title="Buscar no livro (/)" >⌕</button>
+              <button className={settingsOpen ? "active" : ""} onClick={() => setSettingsOpen((value) => !value)} title="Aparência">Aa</button>
+              <button className={focusMode ? "active" : ""} onClick={() => setFocusMode((value) => !value)} title="Modo foco (F)">{focusMode ? "⊡" : "⛶"}</button>
+              <select value={selected.status} onChange={(event) => persist(selected.id, { status: event.target.value as Status })} aria-label="Estado da leitura">
+                <option value="wishlist">Desejo ler</option><option value="reading">Lendo</option><option value="read">Já lido</option>
+              </select>
+            </div>
           </div>
-          <div className="reader-tabs"><button className={tab === "pdf" ? "active" : ""} onClick={() => setTab("pdf")}>PDF</button><button className={tab === "markdown" ? "active" : ""} onClick={() => setTab("markdown")}>Markdown</button><button className={tab === "graph" ? "active" : ""} onClick={() => setTab("graph")}>Conexões</button></div>
+          <div className="reader-tabs">
+            <button className={tab === "pdf" ? "active" : ""} onClick={() => setTab("pdf")}>Documento</button><button className={tab === "markdown" ? "active" : ""} onClick={() => setTab("markdown")}>Leitura</button><button className={tab === "graph" ? "active" : ""} onClick={() => setTab("graph")}>Conexões</button>
+            {tab === "pdf" && <div className="document-tools"><button onClick={() => setZoom((value) => Math.max(.7, value - .15))}>−</button><span>{Math.round((zoom / 1.45) * 100)}%</span><button onClick={() => setZoom((value) => Math.min(2.4, value + .15))}>＋</button><button onClick={() => setZoom(1)}>Página</button><button onClick={() => setZoom(1.45)}>Largura</button><button className={spread ? "active" : ""} onClick={() => setSpread((value) => !value)}>2 páginas</button></div>}
+          </div>
+          {searchOpen && <aside className="reader-popover search-popover"><div><b>Buscar no livro</b><button onClick={() => setSearchOpen(false)}>×</button></div><input autoFocus value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Palavra ou frase…" />
+            <small>{searchQuery.trim().length < 2 ? "Digite ao menos 2 caracteres" : `${searchResults.length} resultado(s)`}</small>
+            <div>{searchResults.map((result) => <button key={result.page} onClick={() => { changePage(result.page); setSearchOpen(false); }}><b>Página {result.page}</b><span>{result.excerpt}</span></button>)}</div>
+          </aside>}
+          {settingsOpen && <aside className="reader-popover settings-popover"><div><b>Aparência da leitura</b><button onClick={() => setSettingsOpen(false)}>×</button></div><label>Tema<select value={readerTheme} onChange={(event) => setReaderTheme(event.target.value as ReaderTheme)}><option value="light">Claro</option><option value="paper">Papel</option><option value="sepia">Sépia</option><option value="dark">Escuro</option><option value="midnight">Meia-noite</option></select></label><label>Tamanho do texto<input type="range" min="14" max="28" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} /></label><label>Entrelinhas<input type="range" min="1.35" max="2.2" step=".05" value={lineHeight} onChange={(event) => setLineHeight(Number(event.target.value))} /></label><label>Largura da coluna<input type="range" min="540" max="1000" step="20" value={contentWidth} onChange={(event) => setContentWidth(Number(event.target.value))} /></label></aside>}
           <div ref={documentStageRef} className="document-stage" onMouseUp={captureSelection}>
-            {tab === "pdf" && <PdfCanvas reading={selected} page={selected.currentPage} highlights={highlights} onLoaded={(count) => count !== selected.totalPages && setItems((current) => current.map((item) => item.id === selected.id ? { ...item, totalPages: count } : item))} />}
-            {tab === "markdown" && <div data-highlight-source="markdown"><MarkdownView markdown={selected.markdown} highlights={highlights.filter((highlight) => highlight.source === "markdown")} /></div>}
+            {tab === "pdf" && <div className={spread ? "pdf-spread" : "pdf-single"}><PdfCanvas reading={selected} page={selected.currentPage} scale={zoom} highlights={highlights} onLoaded={(count) => count !== selected.totalPages && setItems((current) => current.map((item) => item.id === selected.id ? { ...item, totalPages: count } : item))} />{spread && selected.currentPage < selected.totalPages && <PdfCanvas reading={selected} page={selected.currentPage + 1} scale={zoom} highlights={highlights} onLoaded={() => undefined} />}</div>}
+            {tab === "markdown" && <div data-highlight-source="markdown"><MarkdownView markdown={selected.markdown} highlights={highlights.filter((highlight) => highlight.source === "markdown")} fontSize={fontSize} lineHeight={lineHeight} contentWidth={contentWidth} /></div>}
             {tab === "graph" && <div className="reading-graph"><div className="graph-center">{selected.title.slice(0, 32)}</div>{(domains.length ? domains : ["Sem links externos"]).map((domain, index) => <div key={domain} className={`domain-node domain-${index + 1}`}>{domain}</div>)}</div>}
             {pendingHighlight && <div className="highlight-composer" onMouseUp={(event) => event.stopPropagation()}>
               <div className="selected-quote">“{pendingHighlight.quote.slice(0, 180)}{pendingHighlight.quote.length > 180 ? "…" : ""}”</div>
@@ -323,13 +423,14 @@ export default function ReadingClient() {
               <div className="highlight-actions"><button onClick={() => setPendingHighlight(null)}>Cancelar</button><button className="save" disabled={savingHighlight} onClick={saveHighlight}>{savingHighlight ? "Salvando…" : "Destacar"}</button></div>
             </div>}
           </div>
-          <div className="page-controls"><button disabled={selected.currentPage <= 1} onClick={() => changePage(selected.currentPage - 1)}>← Anterior</button><span>Página <b>{selected.currentPage}</b> de {selected.totalPages}</span><button disabled={selected.currentPage >= selected.totalPages} onClick={() => changePage(selected.currentPage + 1)}>Próxima →</button></div>
+          <div className="page-controls"><button disabled={selected.currentPage <= 1} onClick={() => changePage(selected.currentPage - (spread ? 2 : 1))}>← Anterior</button><input aria-label="Progresso da leitura" type="range" min="1" max={selected.totalPages} value={selected.currentPage} onChange={(event) => changePage(Number(event.target.value))} /><span>Página <b>{selected.currentPage}</b> de {selected.totalPages}</span><button disabled={selected.currentPage >= selected.totalPages} onClick={() => changePage(selected.currentPage + (spread ? 2 : 1))}>Próxima →</button></div>
         </section>
         <aside className="reading-session">
           <small>SESSÃO DE LEITURA</small><div className={running ? "timer running" : "timer"}>{formatTime(selected.totalSeconds)}</div><p>Tempo total registrado</p>
           <button className={running ? "timer-button pause" : "timer-button"} onClick={() => { if (running) persist(selected.id, { totalSeconds: selected.totalSeconds }); else if (selected.status === "wishlist") persist(selected.id, { status: "reading" }); setRunning((value) => !value); }}>{running ? "Ⅱ  Pausar cronômetro" : "▶  Iniciar cronômetro"}</button>
           <div className="session-stats"><span><b>{Math.round((selected.currentPage / selected.totalPages) * 100)}%</b>progresso</span><span><b>{selected.totalPages - selected.currentPage}</b>páginas restantes</span></div>
           <div className="resume-card"><span>↗</span><p><b>Retomada automática</b>Ao reabrir, você continuará na página {selected.currentPage}.</p></div>
+          <div className="bookmark-list"><div><small>MARCADORES</small><b>{bookmarks.length}</b></div>{bookmarks.length ? bookmarks.map((bookmark) => <button key={bookmark.id} onClick={() => changePage(bookmark.page)}>Página {bookmark.page}<span>↗</span></button>) : <p>Nenhuma página marcada.</p>}</div>
           <button className="mark-read" onClick={() => persist(selected.id, { status: selected.status === "read" ? "reading" : "read" })}>{selected.status === "read" ? "↶ Voltar para Lendo" : "✓ Marcar como já lido"}</button>
           <div className="markdown-summary"><small>REGISTRO CRIADO</small><p><span>#</span> {selected.title}</p><p><span>##</span> {selected.totalPages} páginas em Markdown</p><p><span>↗</span> {domains.length} links conectados</p></div>
           <div className="annotations-panel"><div className="annotations-heading"><small>DESTAQUES E NOTAS</small><b>{highlights.length}</b></div>

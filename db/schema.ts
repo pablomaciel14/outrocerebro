@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const readings = sqliteTable("readings", {
   id: text("id").primaryKey(),
@@ -33,4 +33,14 @@ export const highlights = sqliteTable("highlights", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index("idx_highlights_user_reading").on(table.userId, table.readingId),
+]);
+
+export const bookmarks = sqliteTable("bookmarks", {
+  id: text("id").primaryKey(),
+  readingId: text("reading_id").notNull().references(() => readings.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  page: integer("page").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("idx_bookmarks_user_reading_page").on(table.userId, table.readingId, table.page),
 ]);
