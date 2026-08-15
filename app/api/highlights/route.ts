@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { highlights, readings } from "../../../db/schema";
 import { getPersonalUser } from "../../personal-auth";
+import { readLimitedJson, rejectCrossSiteMutation, validUuid } from "../../security";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
   const user = await getPersonalUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
   const readingId = new URL(request.url).searchParams.get("readingId");
-  if (!readingId || !(await ownsReading(readingId, user.userId))) return Response.json({ error: "Leitura não encontrada" }, { status: 404 });
+  if (!validUuid(readingId) || !(await ownsReading(readingId, user.userId))) return Response.json({ error: "Leitura não encontrada" }, { status: 404 });
   const items = await getDb().select().from(highlights)
     .where(and(eq(highlights.readingId, readingId), eq(highlights.userId, user.userId)))
     .orderBy(desc(highlights.createdAt));
@@ -42,16 +43,19 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const rejected = rejectCrossSiteMutation(request);
+  if (rejected) return rejected;
   const user = await getPersonalUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
-  const payload = await request.json() as { readingId?: string; source?: "pdf" | "markdown"; page?: number | null; quote?: string; color?: HighlightColor; note?: string; rects?: unknown };
+  const payload = await readLimitedJson<{ readingId?: string; source?: "pdf" | "markdown"; page?: number | null; quote?: string; color?: HighlightColor; note?: string; rects?: unknown }>(request, 64 * 1024);
+  if (!payload) return Response.json({ error: "Destaque inválido" }, { status: 400 });
   const quote = payload.quote?.trim().slice(0, 3000) ?? "";
-  if (!payload.readingId || !quote || !payload.source || !["pdf", "markdown"].includes(payload.source)) return Response.json({ error: "Destaque inválido" }, { status: 400 });
+  if (!validUuid(payload.readingId) || !quote || !payload.source || !["pdf", "markdown"].includes(payload.source) || (payload.source === "pdf" && !Number.isFinite(payload.page))) return Response.json({ error: "Destaque inválido" }, { status: 400 });
   if (!(await ownsReading(payload.readingId, user.userId))) return Response.json({ error: "Leitura não encontrada" }, { status: 404 });
   const color = colors.includes(payload.color as HighlightColor) ? payload.color! : "yellow";
   const [item] = await getDb().insert(highlights).values({
     id: crypto.randomUUID(), readingId: payload.readingId, userId: user.userId,
-    source: payload.source, page: payload.source === "pdf" ? Math.max(1, Math.floor(payload.page ?? 1)) : null,
+    source: payload.source, page: payload.source === "pdf" ? Math.min(100000, Math.max(1, Math.floor(payload.page ?? 1))) : null,
     quote, color, note: payload.note?.trim().slice(0, 2000) ?? "",
     rects: JSON.stringify(payload.source === "pdf" ? normalizeRects(payload.rects) : []),
   }).returning();
@@ -59,10 +63,12 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const rejected = rejectCrossSiteMutation(request);
+  if (rejected) return rejected;
   const user = await getPersonalUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
   const id = new URL(request.url).searchParams.get("id");
-  if (!id) return Response.json({ error: "Destaque inválido" }, { status: 400 });
+  if (!validUuid(id)) return Response.json({ error: "Destaque inválido" }, { status: 400 });
   const [item] = await getDb().delete(highlights)
     .where(and(eq(highlights.id, id), eq(highlights.userId, user.userId))).returning();
   if (!item) return Response.json({ error: "Destaque não encontrado" }, { status: 404 });

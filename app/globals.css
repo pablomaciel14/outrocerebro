@@ -37,6 +37,7 @@ button { color: inherit; }
 .product-name { display: flex; align-items: center; gap: 11px; letter-spacing: -.2px; }
 .brand-symbol { width: 98px; height: 98px; display: block; object-fit: contain; filter: drop-shadow(0 0 12px rgba(139,92,246,.2)); }.brand-symbol.compact { width: 30px; height: 30px; }.brand-logo { position: relative; width: 174px; aspect-ratio: 3 / 1; display: block; }.brand-image { width: 100%; height: 100%; display: block; object-fit: contain; }.brand-image-light { display: none; }.system-light .brand-image-dark,.light-reading .brand-image-dark { display: none; }.system-light .brand-image-light,.light-reading .brand-image-light { display: block; }.identity-symbol { display: none; }
 .top-actions { display: flex; align-items: center; gap: 18px; }
+.top-actions form { display: contents; }
 .top-actions button { border: 0; background: transparent; width: 25px; height: 25px; padding: 0; font-size: 20px; cursor: pointer; color: #dce3eb; }
 .top-actions button:hover { color: var(--cyan); }
 .top-actions .avatar { display: grid; place-items: center; border-radius: 50%; background: var(--border); font-size: 11px; text-decoration: none; }

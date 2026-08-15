@@ -3,12 +3,13 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getChatGPTUser } from "./chatgpt-auth";
 
-const COOKIE_NAME = "oc_personal_session";
-const SESSION_SECONDS = 60 * 60 * 24 * 30;
+const COOKIE_NAME = "__Host-oc_session";
+const LEGACY_COOKIE_NAME = "oc_personal_session";
+const SESSION_SECONDS = 60 * 60 * 12;
 const encoder = new TextEncoder();
 const runtimeEnv = env as unknown as { AUTHORIZED_EMAIL?: string; SESSION_SECRET?: string };
 
-type SessionPayload = { email: string; exp: number };
+type SessionPayload = { aud: "outro-cerebro"; email: string; sub: string; iat: number; exp: number; nonce: string; v: 2 };
 
 export type PersonalUser = {
   userId: string;
@@ -31,7 +32,7 @@ function decodeBase64Url(value: string) {
 
 async function signingKey() {
   const secret = runtimeEnv.SESSION_SECRET;
-  if (!secret) throw new Error("Sessão pessoal não configurada.");
+  if (!secret || encoder.encode(secret).byteLength < 32) throw new Error("Sessão pessoal não configurada com segurança.");
   return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }
 
@@ -43,14 +44,15 @@ function cookieValue(cookieHeader: string | null, name: string) {
   return cookieHeader?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))?.slice(name.length + 1) ?? null;
 }
 
-export async function createPersonalSessionCookie(email: string) {
-  const payload: SessionPayload = { email: email.toLowerCase(), exp: Math.floor(Date.now() / 1000) + SESSION_SECONDS };
+export async function createPersonalSessionCookie(email: string, subject: string) {
+  const now = Math.floor(Date.now() / 1000);
+  const payload: SessionPayload = { aud: "outro-cerebro", email: email.toLowerCase(), sub: subject, iat: now, exp: now + SESSION_SECONDS, nonce: crypto.randomUUID(), v: 2 };
   const encoded = encodeBase64Url(JSON.stringify(payload));
-  return `${COOKIE_NAME}=${encoded}.${await sign(encoded)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_SECONDS}`;
+  return `${COOKIE_NAME}=${encoded}.${await sign(encoded)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_SECONDS}; Priority=High`;
 }
 
-export function clearPersonalSessionCookie() {
-  return `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`;
+export function clearPersonalSessionCookies() {
+  return [COOKIE_NAME, LEGACY_COOKIE_NAME].map((name) => `${name}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Priority=High`);
 }
 
 export async function getPersonalUser(): Promise<PersonalUser | null> {
@@ -65,7 +67,8 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
     if (!valid) return null;
     const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encoded))) as SessionPayload;
     const authorizedEmail = runtimeEnv.AUTHORIZED_EMAIL?.toLowerCase();
-    if (!authorizedEmail || payload.email !== authorizedEmail || payload.exp <= Math.floor(Date.now() / 1000)) return null;
+    const now = Math.floor(Date.now() / 1000);
+    if (!authorizedEmail || payload.aud !== "outro-cerebro" || payload.v !== 2 || !payload.sub || !payload.nonce || payload.email !== authorizedEmail || payload.iat > now + 60 || payload.exp <= now || payload.exp - payload.iat > SESSION_SECONDS) return null;
     const workspaceUser = await getChatGPTUser();
     return {
       userId: workspaceUser?.userId ?? payload.email,

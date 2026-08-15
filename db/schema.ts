@@ -44,3 +44,11 @@ export const bookmarks = sqliteTable("bookmarks", {
 }, (table) => [
   uniqueIndex("idx_bookmarks_user_reading_page").on(table.userId, table.readingId, table.page),
 ]);
+
+export const loginAttempts = sqliteTable("login_attempts", {
+  key: text("key").primaryKey(),
+  failures: integer("failures").notNull().default(0),
+  windowStartedAt: integer("window_started_at").notNull(),
+  blockedUntil: integer("blocked_until").notNull().default(0),
+  updatedAt: integer("updated_at").notNull(),
+});

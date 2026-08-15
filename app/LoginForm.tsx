@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("pablomaciel.adv@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -12,7 +12,7 @@ export default function LoginForm() {
     event.preventDefault();
     setLoading(true); setError("");
     try {
-      const response = await fetch("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
+      const response = await fetch("/api/auth/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Não foi possível entrar.");
       window.location.href = "/workspace";
@@ -25,9 +25,9 @@ export default function LoginForm() {
 
   return <form className="login-form" onSubmit={submit}>
     <label htmlFor="login-email">E-mail</label>
-    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+    <input id="login-email" type="email" autoComplete="email" inputMode="email" maxLength={254} spellCheck={false} value={email} onChange={(event) => setEmail(event.target.value)} required />
     <label htmlFor="login-password">Senha</label>
-    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required autoFocus />
+    <input id="login-password" type="password" autoComplete="current-password" maxLength={512} value={password} onChange={(event) => setPassword(event.target.value)} required />
     {error && <p className="login-error" role="alert">{error}</p>}
     <button className="login-button" type="submit" disabled={loading}><span>{loading ? "Verificando…" : "Entrar no meu espaço"}</span><i>→</i></button>
   </form>;
