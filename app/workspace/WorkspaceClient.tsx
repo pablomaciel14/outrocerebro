@@ -27,7 +27,7 @@ const navItems = [
   ["✧", "MEMÓRIA", "Guarde o que importa."],
   ["⌾", "RACIOCÍNIO", "Organize suas ideias."],
   ["⌘", "CONEXÕES", "Descubra relações."],
-  ["◴", "FOCO", "Pense com clareza."],
+  ["▣", "LEITURAS", "Leia e registre."],
 ];
 
 const initialTasks = [
@@ -103,7 +103,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
         </div>
         <nav aria-label="Áreas do conhecimento">
           {navItems.map(([icon, title, subtitle]) => (
-            <button key={title} className={title === "MEMÓRIA" ? "nav-item active" : "nav-item"}>
+            <button key={title} onClick={() => title === "LEITURAS" && (window.location.href = "/workspace/leituras")} className={title === "MEMÓRIA" ? "nav-item active" : "nav-item"}>
               <span className="nav-icon">{icon}</span>
               <span><b>{title}</b><small>{subtitle}</small></span>
             </button>
