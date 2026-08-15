@@ -24,7 +24,7 @@ function linkify(text: string) {
 
 async function extractMarkdown(file: File) {
   const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   const document = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const title = file.name.replace(/\.pdf$/i, "");
   const sections = [`# ${title}`, "", `> Importado para o Outro Cérebro em ${new Date().toLocaleDateString("pt-BR")}.`, ""];
@@ -58,7 +58,7 @@ function PdfCanvas({ reading, page, onLoaded }: { reading: Reading; page: number
       try {
         setError("");
         const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
         const response = await fetch(`/api/readings?file=${encodeURIComponent(reading.id)}`);
         if (!response.ok) throw new Error("Não foi possível abrir o arquivo.");
         const data = await response.arrayBuffer();
