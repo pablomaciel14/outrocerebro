@@ -94,11 +94,21 @@ export default function ReadingClient() {
   const [running, setRunning] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("Carregando biblioteca...");
+  const [lightMode, setLightMode] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<Reading[]>([]);
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
   useEffect(() => { itemsRef.current = items; }, [items]);
+  useEffect(() => { setLightMode(window.localStorage.getItem("outro-cerebro-reading-theme") === "light"); }, []);
+
+  const toggleTheme = () => {
+    setLightMode((current) => {
+      const next = !current;
+      window.localStorage.setItem("outro-cerebro-reading-theme", next ? "light" : "dark");
+      return next;
+    });
+  };
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/readings", { cache: "no-store" });
@@ -156,10 +166,10 @@ export default function ReadingClient() {
   };
 
   return (
-    <main className="reading-shell">
+    <main className={lightMode ? "reading-shell light-reading" : "reading-shell"}>
       <header className="reading-topbar">
         <a href="/workspace" className="reading-brand"><span>∞</span><b>Outro Cérebro</b></a>
-        <div><span className="saved-indicator">● Progresso salvo</span><a href="/workspace">Voltar às notas</a></div>
+        <div><span className="saved-indicator">● Progresso salvo</span><button className="theme-toggle" onClick={toggleTheme} aria-pressed={lightMode} aria-label="Alternar tema de leitura"><span>{lightMode ? "☾" : "☀"}</span>{lightMode ? "Modo escuro" : "Modo claro"}</button><a href="/workspace">Voltar às notas</a></div>
       </header>
       <aside className="library-panel">
         <div className="library-title"><div><small>BIBLIOTECA PESSOAL</small><h1>Minhas leituras</h1></div><span>{items.length}</span></div>
