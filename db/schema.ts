@@ -29,6 +29,7 @@ export const highlights = sqliteTable("highlights", {
   quote: text("quote").notNull(),
   color: text("color", { enum: ["yellow", "green", "blue", "pink", "violet"] }).notNull().default("yellow"),
   note: text("note").notNull().default(""),
+  rects: text("rects").notNull().default("[]"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index("idx_highlights_user_reading").on(table.userId, table.readingId),

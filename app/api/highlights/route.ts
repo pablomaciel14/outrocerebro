@@ -7,6 +7,22 @@ export const dynamic = "force-dynamic";
 
 const colors = ["yellow", "green", "blue", "pink", "violet"] as const;
 type HighlightColor = typeof colors[number];
+type HighlightRect = { x: number; y: number; width: number; height: number };
+
+function normalizeRects(rects: unknown): HighlightRect[] {
+  if (!Array.isArray(rects)) return [];
+  const clamp = (value: number) => Math.max(0, Math.min(1, value));
+  return rects.slice(0, 100).flatMap((rect) => {
+    if (!rect || typeof rect !== "object") return [];
+    const candidate = rect as Partial<HighlightRect>;
+    if (![candidate.x, candidate.y, candidate.width, candidate.height].every((value) => typeof value === "number" && Number.isFinite(value))) return [];
+    const x = clamp(candidate.x!);
+    const y = clamp(candidate.y!);
+    const width = Math.min(clamp(candidate.width!), 1 - x);
+    const height = Math.min(clamp(candidate.height!), 1 - y);
+    return width > 0 && height > 0 ? [{ x, y, width, height }] : [];
+  });
+}
 
 async function ownsReading(readingId: string, userId: string) {
   const [reading] = await getDb().select({ id: readings.id }).from(readings)
@@ -28,7 +44,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
-  const payload = await request.json() as { readingId?: string; source?: "pdf" | "markdown"; page?: number | null; quote?: string; color?: HighlightColor; note?: string };
+  const payload = await request.json() as { readingId?: string; source?: "pdf" | "markdown"; page?: number | null; quote?: string; color?: HighlightColor; note?: string; rects?: unknown };
   const quote = payload.quote?.trim().slice(0, 3000) ?? "";
   if (!payload.readingId || !quote || !payload.source || !["pdf", "markdown"].includes(payload.source)) return Response.json({ error: "Destaque inválido" }, { status: 400 });
   if (!(await ownsReading(payload.readingId, user.userId))) return Response.json({ error: "Leitura não encontrada" }, { status: 404 });
@@ -37,6 +53,7 @@ export async function POST(request: Request) {
     id: crypto.randomUUID(), readingId: payload.readingId, userId: user.userId,
     source: payload.source, page: payload.source === "pdf" ? Math.max(1, Math.floor(payload.page ?? 1)) : null,
     quote, color, note: payload.note?.trim().slice(0, 2000) ?? "",
+    rects: JSON.stringify(payload.source === "pdf" ? normalizeRects(payload.rects) : []),
   }).returning();
   return Response.json({ highlight: item }, { status: 201 });
 }

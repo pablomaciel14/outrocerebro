@@ -9,8 +9,9 @@ type Reading = {
   currentPage: number; totalPages: number; totalSeconds: number; updatedAt: string;
 };
 type HighlightColor = "yellow" | "green" | "blue" | "pink" | "violet";
-type Highlight = { id: string; readingId: string; source: "pdf" | "markdown"; page: number | null; quote: string; color: HighlightColor; note: string; createdAt: string };
-type PendingHighlight = { quote: string; source: "pdf" | "markdown"; page: number | null };
+type HighlightRect = { x: number; y: number; width: number; height: number };
+type Highlight = { id: string; readingId: string; source: "pdf" | "markdown"; page: number | null; quote: string; color: HighlightColor; note: string; rects: string; createdAt: string };
+type PendingHighlight = { quote: string; source: "pdf" | "markdown"; page: number | null; rects: HighlightRect[] };
 
 const statusLabels: Record<Status, string> = { wishlist: "Desejo ler", reading: "Lendo", read: "Já lido" };
 
@@ -62,6 +63,17 @@ function highlightedLine(text: string, highlights: Highlight[], keyPrefix: strin
   return output;
 }
 
+function parseHighlightRects(value: string | undefined): HighlightRect[] {
+  try {
+    const rects = JSON.parse(value ?? "[]") as unknown;
+    return Array.isArray(rects) ? rects.filter((rect): rect is HighlightRect => Boolean(
+      rect && typeof rect === "object" && [rect.x, rect.y, rect.width, rect.height].every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate)),
+    )) : [];
+  } catch {
+    return [];
+  }
+}
+
 function MarkdownView({ markdown, highlights }: { markdown: string; highlights: Highlight[] }) {
   return <div className="markdown-view">{markdown.split("\n").map((line, index) => {
     if (line.startsWith("# ")) return <h1 key={index}>{highlightedLine(line.slice(2), highlights, `h1-${index}`)}</h1>;
@@ -107,7 +119,7 @@ function PdfCanvas({ reading, page, highlights, onLoaded }: { reading: Reading; 
           textLayerContainer.style.setProperty("--scale-factor", String(viewport.scale));
           const textLayer = new pdfjs.TextLayer({ textContentSource: await pdfPage.getTextContent(), container: textLayerContainer, viewport });
           await textLayer.render();
-          const pageHighlights = highlights.filter((highlight) => highlight.source === "pdf" && highlight.page === page);
+          const pageHighlights = highlights.filter((highlight) => highlight.source === "pdf" && highlight.page === page && parseHighlightRects(highlight.rects).length === 0);
           textLayerContainer.querySelectorAll("span").forEach((span) => {
             const hit = pageHighlights.find((highlight) => span.textContent?.includes(highlight.quote));
             if (hit) span.classList.add("pdf-highlight", `highlight-${hit.color}`);
@@ -121,7 +133,13 @@ function PdfCanvas({ reading, page, highlights, onLoaded }: { reading: Reading; 
   }, [reading.id, page, highlights, onLoaded]);
 
   if (error) return <div className="reader-error">{error}</div>;
-  return <div className="pdf-page-wrap" data-highlight-source="pdf" data-highlight-page={page}><canvas ref={canvasRef} className="pdf-canvas" aria-label={`Página ${page} de ${reading.title}`} /><div ref={textLayerRef} className="textLayer pdf-text-layer" /></div>;
+  const pageRects = highlights.filter((highlight) => highlight.source === "pdf" && highlight.page === page)
+    .flatMap((highlight) => parseHighlightRects(highlight.rects).map((rect, index) => ({ ...rect, color: highlight.color, key: `${highlight.id}-${index}` })));
+  return <div className="pdf-page-wrap" data-highlight-source="pdf" data-highlight-page={page}>
+    <canvas ref={canvasRef} className="pdf-canvas" aria-label={`Página ${page} de ${reading.title}`} />
+    <div className="pdf-highlight-overlays" aria-hidden="true">{pageRects.map((rect) => <i key={rect.key} className={`pdf-highlight-rect highlight-${rect.color}`} style={{ left: `${rect.x * 100}%`, top: `${rect.y * 100}%`, width: `${rect.width * 100}%`, height: `${rect.height * 100}%` }} />)}</div>
+    <div ref={textLayerRef} className="textLayer pdf-text-layer" />
+  </div>;
 }
 
 export default function ReadingClient() {
@@ -176,9 +194,19 @@ export default function ReadingClient() {
     if (!selection || selection.isCollapsed || !stage || !selection.anchorNode || !stage.contains(selection.anchorNode)) return;
     const quote = selection.toString().replace(/\s+/g, " ").trim();
     if (quote.length < 2) return;
-    const element = selection.anchorNode.nodeType === Node.ELEMENT_NODE ? selection.anchorNode as Element : selection.anchorNode.parentElement;
+    const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+    const commonNode = range?.commonAncestorContainer ?? selection.anchorNode;
+    const element = commonNode.nodeType === Node.ELEMENT_NODE ? commonNode as Element : commonNode.parentElement;
     const pdfPage = element?.closest<HTMLElement>("[data-highlight-source='pdf']");
-    setPendingHighlight({ quote: quote.slice(0, 3000), source: tab === "pdf" ? "pdf" : "markdown", page: pdfPage ? Number(pdfPage.dataset.highlightPage) : null });
+    const pageBounds = pdfPage?.getBoundingClientRect();
+    const clamp = (value: number) => Math.max(0, Math.min(1, value));
+    const rects = pdfPage && pageBounds && range ? Array.from(range.getClientRects()).filter((rect) => rect.width > 1 && rect.height > 1).map((rect) => ({
+      x: clamp((rect.left - pageBounds.left) / pageBounds.width),
+      y: clamp((rect.top - pageBounds.top) / pageBounds.height),
+      width: clamp(rect.width / pageBounds.width),
+      height: clamp(rect.height / pageBounds.height),
+    })) : [];
+    setPendingHighlight({ quote: quote.slice(0, 3000), source: tab === "pdf" ? "pdf" : "markdown", page: pdfPage ? Number(pdfPage.dataset.highlightPage) : null, rects });
     setHighlightNote("");
   };
 

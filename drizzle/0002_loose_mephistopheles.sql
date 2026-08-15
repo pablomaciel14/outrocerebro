@@ -1,0 +1,1 @@
+ALTER TABLE `highlights` ADD `rects` text DEFAULT '[]' NOT NULL;
