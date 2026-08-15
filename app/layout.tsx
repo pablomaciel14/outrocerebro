@@ -10,12 +10,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = host.includes("localhost") ? "http" : "https";
-  const image = `${protocol}://${host}/og.png`;
+  const image = `${protocol}://${host}/og-image.jpg`;
 
   return {
     title: "Outro Cérebro — Seu espaço privado para pensar",
     description: "Memória externa, raciocínio, conexões e foco em um espaço privado para suas ideias.",
-    icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    manifest: "/manifest.webmanifest",
+    icons: { icon: "/favicon.ico", shortcut: "/favicon.ico", apple: "/apple-icon.png" },
     openGraph: {
       title: "Outro Cérebro",
       description: "Seu espaço privado para pensar.",

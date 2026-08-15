@@ -3,18 +3,6 @@ import ThemeToggle from "./ThemeToggle";
 
 export const dynamic = "force-dynamic";
 
-function Mark() {
-  return (
-    <div className="login-mark" aria-hidden="true">
-      <i className="login-orbit orbit-one" />
-      <i className="login-orbit orbit-two" />
-      <i className="login-node node-one" />
-      <i className="login-node node-two" />
-      <span>∞</span>
-    </div>
-  );
-}
-
 export default async function LoginPage() {
   const user = await getChatGPTUser();
   const destination = user ? "/workspace" : chatGPTSignInPath("/workspace");
@@ -25,7 +13,10 @@ export default async function LoginPage() {
       <div className="login-ambient ambient-one" />
       <div className="login-ambient ambient-two" />
       <section className="login-card" aria-labelledby="login-title">
-        <div className="login-brand"><Mark /><p>OUTRO<br />CÉREBRO</p></div>
+        <div className="login-brand" aria-label="Outro Cérebro">
+          <img className="brand-image brand-image-dark" src="/outro-cerebro-logo-dark.webp" alt="Outro Cérebro" />
+          <img className="brand-image brand-image-light" src="/outro-cerebro-logo-light.webp" alt="" aria-hidden="true" />
+        </div>
         <div className="private-pill"><span>●</span> ESPAÇO ESTRITAMENTE PESSOAL</div>
         <h1 id="login-title">Meu espaço privado<br />para pensar.</h1>
         <p className="login-copy">Memórias, ideias e conexões reunidas em um ambiente particular de <strong>Pablo Maciel</strong>.</p>

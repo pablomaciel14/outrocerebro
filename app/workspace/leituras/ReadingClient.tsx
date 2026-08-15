@@ -276,7 +276,7 @@ export default function ReadingClient() {
   return (
     <main className={lightMode ? "reading-shell light-reading" : "reading-shell"}>
       <header className="reading-topbar">
-        <a href="/workspace" className="reading-brand"><span>∞</span><b>Outro Cérebro</b></a>
+        <a href="/workspace" className="reading-brand"><img src="/outro-cerebro-symbol.webp" alt="" aria-hidden="true" /><b>Outro Cérebro</b></a>
         <div><span className="saved-indicator">● Progresso salvo</span><ThemeToggle /><a href="/workspace">Voltar às notas</a></div>
       </header>
       <aside className="library-panel">

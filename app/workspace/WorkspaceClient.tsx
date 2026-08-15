@@ -39,15 +39,7 @@ const initialTasks = [
 ];
 
 function Mark({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className={compact ? "mark compact" : "mark"} aria-hidden="true">
-      <i className="orbit orbit-a" />
-      <i className="orbit orbit-b" />
-      <i className="node node-a" />
-      <i className="node node-b" />
-      <span>∞</span>
-    </div>
-  );
+  return <img className={compact ? "brand-symbol compact" : "brand-symbol"} src="/outro-cerebro-symbol.webp" alt="" aria-hidden="true" />;
 }
 
 export default function WorkspaceClient({ displayName, email }: { displayName: string; email: string }) {
@@ -99,8 +91,11 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
 
       <aside className="identity-panel">
         <div className="brand-lockup">
-          <Mark />
-          <div className="brand-word">OUTRO<br />CÉREBRO</div>
+          <span className="brand-logo" aria-label="Outro Cérebro">
+            <img className="brand-image brand-image-dark" src="/outro-cerebro-logo-dark.webp" alt="Outro Cérebro" />
+            <img className="brand-image brand-image-light" src="/outro-cerebro-logo-light.webp" alt="" aria-hidden="true" />
+          </span>
+          <span className="identity-symbol"><Mark /></span>
           <p>Seu espaço privado<br />para pensar.</p>
         </div>
         <nav aria-label="Áreas do conhecimento">
