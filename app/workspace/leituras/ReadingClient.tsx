@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ThemeToggle from "../../ThemeToggle";
 
 type Status = "wishlist" | "reading" | "read";
 type Reading = {
@@ -100,15 +101,12 @@ export default function ReadingClient() {
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
   useEffect(() => { itemsRef.current = items; }, [items]);
-  useEffect(() => { setLightMode(window.localStorage.getItem("outro-cerebro-reading-theme") === "light"); }, []);
-
-  const toggleTheme = () => {
-    setLightMode((current) => {
-      const next = !current;
-      window.localStorage.setItem("outro-cerebro-reading-theme", next ? "light" : "dark");
-      return next;
-    });
-  };
+  useEffect(() => {
+    setLightMode(window.localStorage.getItem("outro-cerebro-reading-theme") === "light");
+    const sync = (event: Event) => setLightMode((event as CustomEvent<string>).detail === "light");
+    window.addEventListener("outro-cerebro-theme", sync);
+    return () => window.removeEventListener("outro-cerebro-theme", sync);
+  }, []);
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/readings", { cache: "no-store" });
@@ -169,7 +167,7 @@ export default function ReadingClient() {
     <main className={lightMode ? "reading-shell light-reading" : "reading-shell"}>
       <header className="reading-topbar">
         <a href="/workspace" className="reading-brand"><span>∞</span><b>Outro Cérebro</b></a>
-        <div><span className="saved-indicator">● Progresso salvo</span><button className="theme-toggle" onClick={toggleTheme} aria-pressed={lightMode} aria-label="Alternar tema de leitura"><span>{lightMode ? "☾" : "☀"}</span>{lightMode ? "Modo escuro" : "Modo claro"}</button><a href="/workspace">Voltar às notas</a></div>
+        <div><span className="saved-indicator">● Progresso salvo</span><ThemeToggle /><a href="/workspace">Voltar às notas</a></div>
       </header>
       <aside className="library-panel">
         <div className="library-title"><div><small>BIBLIOTECA PESSOAL</small><h1>Minhas leituras</h1></div><span>{items.length}</span></div>

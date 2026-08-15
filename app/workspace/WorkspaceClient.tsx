@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ThemeToggle from "../ThemeToggle";
 
 type Note = {
   id: number;
@@ -90,7 +91,8 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
         <div className="top-actions">
           <button aria-label="Buscar" onClick={() => searchRef.current?.focus()}>⌕</button>
           <button aria-label="Abrir comandos">›_</button>
-          <button aria-label="Alternar foco" onClick={() => setZen((value) => !value)}>☾</button>
+          <ThemeToggle variant="icon" />
+          <button aria-label="Alternar foco" onClick={() => setZen((value) => !value)}>◉</button>
           <a className="avatar" aria-label={`Conta de ${displayName}`} title={`${displayName} · ${email}`} href="/signout-with-chatgpt?return_to=%2F">{displayName.charAt(0).toUpperCase()}</a>
         </div>
       </header>

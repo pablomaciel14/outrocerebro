@@ -1,4 +1,5 @@
 import { chatGPTSignInPath, getChatGPTUser } from "./chatgpt-auth";
+import ThemeToggle from "./ThemeToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function LoginPage() {
 
   return (
     <main className="login-page">
+      <ThemeToggle variant="floating" />
       <div className="login-ambient ambient-one" />
       <div className="login-ambient ambient-two" />
       <section className="login-card" aria-labelledby="login-title">
