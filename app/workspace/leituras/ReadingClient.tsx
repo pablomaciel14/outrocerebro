@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Bookmark, BookOpenText, Check, ChevronLeft, ChevronRight, Columns2, ExternalLink, FileCode2, FileText, Focus, GitBranch, History, LockKeyhole, Maximize2, Minimize2, Network, Pause, Play, Search, Settings2, Timer, Trash2, Upload, ZoomIn, ZoomOut } from "lucide-react";
 import ThemeToggle from "../../ThemeToggle";
 
 type Status = "wishlist" | "reading" | "read";
@@ -16,6 +17,10 @@ type Bookmark = { id: string; readingId: string; page: number; createdAt: string
 type ReaderTheme = "light" | "paper" | "sepia" | "dark" | "midnight";
 
 const statusLabels: Record<Status, string> = { wishlist: "Desejo ler", reading: "Lendo", read: "Já lido" };
+
+function PdfIcon({ large = false }: { large?: boolean }) {
+  return <span className={`premium-pdf-icon${large ? " large" : ""}`} aria-hidden="true"><FileText /><b>PDF</b></span>;
+}
 
 function formatTime(total: number) {
   const hours = Math.floor(total / 3600).toString().padStart(2, "0");
@@ -429,7 +434,7 @@ export default function ReadingClient() {
       <aside className="library-panel">
         <div className="library-title"><div><small>BIBLIOTECA PESSOAL</small><h1>Minhas leituras</h1></div><span>{items.length}</span></div>
         <input ref={inputRef} type="file" accept="application/pdf" hidden onChange={(event) => onUpload(event.target.files?.[0])} />
-        <button className="upload-pdf" disabled={uploading} onClick={() => inputRef.current?.click()}>{uploading ? "Processando…" : "＋  Adicionar PDF"}</button>
+        <button className="upload-pdf" disabled={uploading} onClick={() => inputRef.current?.click()}>{uploading ? <><Timer className="spin-icon" /> Processando…</> : <><Upload /> Adicionar PDF</>}</button>
         <div className="reading-filters">
           {(["all", "reading", "wishlist", "read"] as const).map((value) => <button key={value} className={filter === value ? "active" : ""} onClick={() => setFilter(value)}>{value === "all" ? "Todos" : statusLabels[value]}</button>)}
         </div>
@@ -437,35 +442,35 @@ export default function ReadingClient() {
           {filtered.map((item) => {
             const progress = Math.round((item.currentPage / item.totalPages) * 100);
             return <button key={item.id} className={item.id === selectedId ? "library-item active" : "library-item"} onClick={() => openReading(item.id)}>
-              <i>PDF</i><span><b>{item.title}</b><small>{statusLabels[item.status]} · pág. {item.currentPage}/{item.totalPages}</small><em><u style={{ width: `${progress}%` }} /></em></span>
+              <PdfIcon /><span className="library-copy"><b>{item.title}</b><small>{statusLabels[item.status]} · pág. {item.currentPage}/{item.totalPages}</small><em><u style={{ width: `${progress}%` }} /></em></span>
             </button>;
           })}
           {message && <p className="library-message">{message}</p>}
         </div>
-        <div className="library-private"><span>♙</span><p>Biblioteca privada<small>Arquivos e progresso visíveis apenas para você.</small></p></div>
+        <div className="library-private"><LockKeyhole /><p>Biblioteca privada<small>Arquivos e progresso visíveis apenas para você.</small></p></div>
       </aside>
 
       {!selected ? <section className="reading-empty">
-        <div className="empty-icon">PDF</div><h2>Sua sala de leitura</h2><p>Adicione um PDF para transformar a leitura em memória: texto em Markdown, links, conexões, tempo e progresso.</p><button onClick={() => inputRef.current?.click()}>Escolher primeiro PDF</button>
-        <div className="feature-row"><span>◫<b>Retome da página</b></span><span>◷<b>Registre seu tempo</b></span><span>⌘<b>Conecte ideias</b></span></div>
+        <PdfIcon large /><h2>Sua sala de leitura</h2><p>Adicione um PDF para transformar a leitura em memória: texto em Markdown, links, conexões, tempo e progresso.</p><button onClick={() => inputRef.current?.click()}><Upload /> Escolher primeiro PDF</button>
+        <div className="feature-row"><span><History /><b>Retome da página</b></span><span><Timer /><b>Registre seu tempo</b></span><span><Network /><b>Conecte ideias</b></span></div>
       </section> : <>
         <section className="reader-stage">
           <div className="reader-heading">
-            <button className="reader-back" onClick={() => setSelectedId(null)} aria-label="Voltar à biblioteca">←</button>
+            <button className="reader-back" onClick={() => setSelectedId(null)} aria-label="Voltar à biblioteca"><ArrowLeft /></button>
             <div className="reader-title"><small>{statusLabels[selected.status]}</small><h1>{selected.title}</h1></div>
             <div className="reader-tools">
-              <button className={currentPageBookmarked ? "active" : ""} onClick={toggleBookmark} title="Marcar página (B)">◆</button>
-              <button className={searchOpen ? "active" : ""} onClick={() => setSearchOpen((value) => !value)} title="Buscar no livro (/)" >⌕</button>
-              <button className={settingsOpen ? "active" : ""} onClick={() => setSettingsOpen((value) => !value)} title="Aparência">Aa</button>
-              <button className={focusMode ? "active" : ""} onClick={() => setFocusMode((value) => !value)} title="Modo foco (F)">{focusMode ? "⊡" : "⛶"}</button>
+              <button className={currentPageBookmarked ? "active" : ""} onClick={toggleBookmark} title="Marcar página (B)"><Bookmark fill={currentPageBookmarked ? "currentColor" : "none"} /></button>
+              <button className={searchOpen ? "active" : ""} onClick={() => setSearchOpen((value) => !value)} title="Buscar no livro (/)" ><Search /></button>
+              <button className={settingsOpen ? "active" : ""} onClick={() => setSettingsOpen((value) => !value)} title="Aparência"><Settings2 /></button>
+              <button className={focusMode ? "active" : ""} onClick={() => setFocusMode((value) => !value)} title="Modo foco (F)">{focusMode ? <Minimize2 /> : <Maximize2 />}</button>
               <select value={selected.status} onChange={(event) => persist(selected.id, { status: event.target.value as Status })} aria-label="Estado da leitura">
                 <option value="wishlist">Desejo ler</option><option value="reading">Lendo</option><option value="read">Já lido</option>
               </select>
             </div>
           </div>
           <div className="reader-tabs">
-            <button className={tab === "pdf" ? "active" : ""} onClick={() => setTab("pdf")}>Documento</button><button className={tab === "markdown" ? "active" : ""} onClick={() => setTab("markdown")}>Leitura</button><button className={tab === "graph" ? "active" : ""} onClick={() => setTab("graph")}>Conexões</button>
-            {tab === "pdf" && <div className="document-tools"><button onClick={() => { setFitWidth(false); setZoom((value) => Math.max(.7, value - .15)); }}>−</button><span>{fitWidth ? "Ajustado" : `${Math.round((zoom / 1.45) * 100)}%`}</span><button onClick={() => { setFitWidth(false); setZoom((value) => Math.min(2.4, value + .15)); }}>＋</button><button className={fitWidth ? "active" : ""} onClick={() => { setSpread(false); setFitWidth(true); }}>Largura</button><button className={spread ? "active" : ""} onClick={() => { setFitWidth(false); setSpread((value) => !value); }}>2 páginas</button></div>}
+            <button className={tab === "pdf" ? "active" : ""} onClick={() => setTab("pdf")}><FileText /> Documento</button><button className={tab === "markdown" ? "active" : ""} onClick={() => setTab("markdown")}><BookOpenText /> Leitura</button><button className={tab === "graph" ? "active" : ""} onClick={() => setTab("graph")}><GitBranch /> Conexões</button>
+            {tab === "pdf" && <div className="document-tools"><button aria-label="Diminuir zoom" onClick={() => { setFitWidth(false); setZoom((value) => Math.max(.7, value - .15)); }}><ZoomOut /></button><span>{fitWidth ? "Ajustado" : `${Math.round((zoom / 1.45) * 100)}%`}</span><button aria-label="Aumentar zoom" onClick={() => { setFitWidth(false); setZoom((value) => Math.min(2.4, value + .15)); }}><ZoomIn /></button><button className={fitWidth ? "active" : ""} onClick={() => { setSpread(false); setFitWidth(true); }}><Focus /> Largura</button><button className={spread ? "active" : ""} onClick={() => { setFitWidth(false); setSpread((value) => !value); }}><Columns2 /> 2 páginas</button></div>}
           </div>
           {searchOpen && <aside className="reader-popover search-popover"><div><b>Buscar no livro</b><button onClick={() => setSearchOpen(false)}>×</button></div><input autoFocus value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Palavra ou frase…" />
             <small>{searchQuery.trim().length < 2 ? "Digite ao menos 2 caracteres" : `${searchResults.length} resultado(s)`}</small>
@@ -485,20 +490,20 @@ export default function ReadingClient() {
               <div className="highlight-actions"><button onClick={() => setPendingHighlight(null)}>Cancelar</button><button className="save" disabled={savingHighlight} onClick={saveHighlight}>{savingHighlight ? "Salvando…" : "Destacar"}</button></div>
             </div>}
           </div>
-          <div className="page-controls"><button disabled={selected.currentPage <= 1} onClick={() => changePage(selected.currentPage - (spread ? 2 : 1))}>← Anterior</button><input aria-label="Progresso da leitura" type="range" min="1" max={selected.totalPages} value={selected.currentPage} onChange={(event) => changePage(Number(event.target.value))} /><span>Página <b>{selected.currentPage}</b> de {selected.totalPages}</span><button disabled={selected.currentPage >= selected.totalPages} onClick={() => changePage(selected.currentPage + (spread ? 2 : 1))}>Próxima →</button></div>
+          <div className="page-controls"><button disabled={selected.currentPage <= 1} onClick={() => changePage(selected.currentPage - (spread ? 2 : 1))}><ChevronLeft /> Anterior</button><input aria-label="Progresso da leitura" type="range" min="1" max={selected.totalPages} value={selected.currentPage} onChange={(event) => changePage(Number(event.target.value))} /><span>Página <b>{selected.currentPage}</b> de {selected.totalPages}</span><button disabled={selected.currentPage >= selected.totalPages} onClick={() => changePage(selected.currentPage + (spread ? 2 : 1))}>Próxima <ChevronRight /></button></div>
         </section>
         <aside className="reading-session">
           <small>SESSÃO DE LEITURA</small><div className={running ? "timer running" : "timer"}>{formatTime(selected.totalSeconds)}</div><p>Tempo total registrado</p>
-          <button className={running ? "timer-button pause" : "timer-button"} onClick={() => { if (running) persist(selected.id, { totalSeconds: selected.totalSeconds }); else if (selected.status === "wishlist") persist(selected.id, { status: "reading" }); setRunning((value) => !value); }}>{running ? "Ⅱ  Pausar cronômetro" : "▶  Iniciar cronômetro"}</button>
+          <button className={running ? "timer-button pause" : "timer-button"} onClick={() => { if (running) persist(selected.id, { totalSeconds: selected.totalSeconds }); else if (selected.status === "wishlist") persist(selected.id, { status: "reading" }); setRunning((value) => !value); }}>{running ? <><Pause /> Pausar cronômetro</> : <><Play /> Iniciar cronômetro</>}</button>
           <div className="session-stats"><span><b>{Math.round((selected.currentPage / selected.totalPages) * 100)}%</b>progresso</span><span><b>{selected.totalPages - selected.currentPage}</b>páginas restantes</span></div>
-          <div className="resume-card"><span>↗</span><p><b>Retomada automática</b>Ao reabrir, você continuará na página {selected.currentPage}.</p></div>
-          <div className="bookmark-list"><div><small>MARCADORES</small><b>{bookmarks.length}</b></div>{bookmarks.length ? bookmarks.map((bookmark) => <button key={bookmark.id} onClick={() => changePage(bookmark.page)}>Página {bookmark.page}<span>↗</span></button>) : <p>Nenhuma página marcada.</p>}</div>
-          <button className="mark-read" onClick={() => persist(selected.id, { status: selected.status === "read" ? "reading" : "read" })}>{selected.status === "read" ? "↶ Voltar para Lendo" : "✓ Marcar como já lido"}</button>
-          <div className="markdown-summary"><small>REGISTRO CRIADO</small><p><span>#</span> {selected.title}</p><p><span>##</span> {selected.totalPages} páginas em Markdown</p><p><span>↗</span> {domains.length} links conectados</p></div>
+          <div className="resume-card"><History /><p><b>Retomada automática</b>Ao reabrir, você continuará na página {selected.currentPage}.</p></div>
+          <div className="bookmark-list"><div><small>MARCADORES</small><b>{bookmarks.length}</b></div>{bookmarks.length ? bookmarks.map((bookmark) => <button key={bookmark.id} onClick={() => changePage(bookmark.page)}>Página {bookmark.page}<ExternalLink /></button>) : <p>Nenhuma página marcada.</p>}</div>
+          <button className="mark-read" onClick={() => persist(selected.id, { status: selected.status === "read" ? "reading" : "read" })}>{selected.status === "read" ? <><History /> Voltar para Lendo</> : <><Check /> Marcar como já lido</>}</button>
+          <div className="markdown-summary"><small>REGISTRO CRIADO</small><p><FileCode2 /> {selected.title}</p><p><FileText /> {selected.totalPages} páginas em Markdown</p><p><Network /> {domains.length} links conectados</p></div>
           <div className="annotations-panel"><div className="annotations-heading"><small>DESTAQUES E NOTAS</small><b>{highlights.length}</b></div>
             <p className="annotations-help">Selecione um trecho no PDF ou Markdown para destacar.</p>
             <div className="annotations-list">{highlights.map((highlight) => <article key={highlight.id} className={`annotation-card annotation-${highlight.color}`}>
-              <div><i className={`color-dot highlight-${highlight.color}`} /><small>{highlight.source === "pdf" ? `PDF · página ${highlight.page}` : "Markdown"}</small><button onClick={() => deleteHighlight(highlight.id)} aria-label="Excluir destaque">×</button></div>
+              <div><i className={`color-dot highlight-${highlight.color}`} /><small>{highlight.source === "pdf" ? `PDF · página ${highlight.page}` : "Markdown"}</small><button onClick={() => deleteHighlight(highlight.id)} aria-label="Excluir destaque"><Trash2 /></button></div>
               <blockquote>“{highlight.quote}”</blockquote>{highlight.note && <p>{highlight.note}</p>}
             </article>)}</div>
           </div>

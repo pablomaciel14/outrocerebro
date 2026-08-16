@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BookOpenText, Brain, Check, ChevronDown, ChevronRight, Eye, Focus, Lightbulb, Link2, LockKeyhole, Network, PencilLine, Plus, Search, Settings2, Tags, TerminalSquare } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 
 type Note = {
@@ -25,10 +26,10 @@ const initialNotes: Note[] = [
 ];
 
 const navItems = [
-  ["✧", "MEMÓRIA", "Guarde o que importa."],
-  ["⌾", "RACIOCÍNIO", "Organize suas ideias."],
-  ["⌘", "CONEXÕES", "Descubra relações."],
-  ["▣", "LEITURAS", "Leia e registre."],
+  { Icon: Brain, title: "MEMÓRIA", subtitle: "Guarde o que importa." },
+  { Icon: Lightbulb, title: "RACIOCÍNIO", subtitle: "Organize suas ideias." },
+  { Icon: Network, title: "CONEXÕES", subtitle: "Descubra relações." },
+  { Icon: BookOpenText, title: "LEITURAS", subtitle: "Leia e registre." },
 ];
 
 const initialTasks = [
@@ -81,10 +82,10 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
       <header className="topbar">
         <div className="product-name"><Mark compact /><strong>Outro Cérebro</strong></div>
         <div className="top-actions">
-          <button aria-label="Buscar" onClick={() => searchRef.current?.focus()}>⌕</button>
-          <button aria-label="Abrir comandos">›_</button>
+          <button aria-label="Buscar" onClick={() => searchRef.current?.focus()}><Search /></button>
+          <button aria-label="Abrir comandos"><TerminalSquare /></button>
           <ThemeToggle variant="icon" />
-          <button aria-label="Alternar foco" onClick={() => setZen((value) => !value)}>◉</button>
+          <button aria-label="Alternar foco" onClick={() => setZen((value) => !value)}><Focus /></button>
           <form action="/api/auth/logout" method="post"><button className="avatar" aria-label={`Sair da conta de ${displayName}`} title={`${displayName} · ${email} · Sair`} type="submit">{displayName.charAt(0).toUpperCase()}</button></form>
         </div>
       </header>
@@ -99,23 +100,23 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <p>Seu espaço privado<br />para pensar.</p>
         </div>
         <nav aria-label="Áreas do conhecimento">
-          {navItems.map(([icon, title, subtitle]) => (
+          {navItems.map(({ Icon, title, subtitle }) => (
             <button key={title} onClick={() => title === "LEITURAS" && (window.location.href = "/workspace/leituras")} className={title === "MEMÓRIA" ? "nav-item active" : "nav-item"}>
-              <span className="nav-icon">{icon}</span>
+              <span className="nav-icon"><Icon /></span>
               <span><b>{title}</b><small>{subtitle}</small></span>
             </button>
           ))}
         </nav>
-        <div className="privacy"><span>♙</span><p>Uso estritamente pessoal<small>Seus dados. Suas ideias.</small></p></div>
+        <div className="privacy"><LockKeyhole /><p>Uso estritamente pessoal<small>Seus dados. Suas ideias.</small></p></div>
       </aside>
 
       <aside className="notes-panel">
         <label className="search-box">
-          <span>⌕</span>
+          <Search />
           <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar notas..." aria-label="Buscar notas" />
           <kbd>⌘K</kbd>
         </label>
-        <button className="new-note" onClick={addNote}><span>＋</span> Nova nota <i>⌄</i></button>
+        <button className="new-note" onClick={addNote}><Plus /> Nova nota <ChevronDown /></button>
         <div className="note-groups">
           {(["HOJE", "ONTEM", "7 DIAS"] as const).map((group) => {
             const groupNotes = filtered.filter((note) => note.group === group);
@@ -133,7 +134,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           })}
           {!filtered.length && <div className="empty-search">Nenhuma nota encontrada.</div>}
         </div>
-        <button className="settings"><span>⚙</span> Configurações</button>
+        <button className="settings"><Settings2 /> Configurações</button>
       </aside>
 
       <section className="editor-panel">
@@ -142,8 +143,8 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <span>Salvo agora há pouco <b>✓</b></span>
         </div>
         <div className="mode-switch" role="tablist" aria-label="Modo da nota">
-          <button className={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}>♢ &nbsp; Editar</button>
-          <button className={mode === "read" ? "active" : ""} onClick={() => setMode("read")}>◉ &nbsp; Ler</button>
+          <button className={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}><PencilLine /> Editar</button>
+          <button className={mode === "read" ? "active" : ""} onClick={() => setMode("read")}><Eye /> Ler</button>
         </div>
         <article className={mode === "read" ? "note-content reading" : "note-content"}>
           <h2><span>#</span> {selected.title}</h2>
@@ -167,15 +168,15 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
             <div>Otimista</div><div>34,2%</div><div>26,1%</div><div className="positive">-8,1%</div>
           </div>
         </article>
-        <footer className="editor-footer"><span>◇ &nbsp; ⛓ &nbsp; •••</span><span>842 palavras &nbsp; 5.472 caracteres &nbsp; Markdown</span></footer>
+        <footer className="editor-footer"><span className="footer-icons"><Tags /><Link2 /></span><span>842 palavras &nbsp; 5.472 caracteres &nbsp; Markdown</span></footer>
       </section>
 
       <aside className="context-panel">
         <section className="context-section tasks">
-          <div className="section-heading"><h2>TAREFAS</h2><button aria-label="Adicionar tarefa">＋</button></div>
+          <div className="section-heading"><h2>TAREFAS</h2><button aria-label="Adicionar tarefa"><Plus /></button></div>
           {tasks.map((task, index) => (
             <button key={task.title} className={task.done ? "task done" : "task"} onClick={() => setTasks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, done: !item.done } : item))}>
-              <i>{task.done ? "✓" : ""}</i><span>{task.title}</span><time>{task.date}</time>
+              <i>{task.done ? <Check /> : null}</i><span>{task.title}</span><time>{task.date}</time>
             </button>
           ))}
         </section>
@@ -183,7 +184,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <div className="section-heading"><h2>BACKLINKS <b>3</b></h2></div>
           {["Reforma tributária 2026|#contexto", "IBS e CBS: principais pontos|#planejamento", "Incentivos fiscais regionais|#estratégias"].map((item) => {
             const [title, tag] = item.split("|");
-            return <button key={title}><span>{title}</span><small>{tag}</small><i>›</i></button>;
+            return <button key={title}><span>{title}</span><small>{tag}</small><i><ChevronRight /></i></button>;
           })}
         </section>
         <section className="context-section graph-section">
