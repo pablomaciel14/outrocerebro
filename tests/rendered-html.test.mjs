@@ -16,6 +16,10 @@ test("workspace exposes editable knowledge areas and agenda navigation", async (
   assert.match(client, /\/workspace\?area=agenda/);
   assert.match(client, /Compromisso/);
   assert.match(client, /Lista de tarefas/);
+  assert.match(client, /Planejamento semanal/);
+  assert.match(client, /Rastreador de hábitos/);
+  assert.match(client, /Controle financeiro/);
+  assert.match(client, /Começar com página em branco/);
   assert.match(client, /\/workspace\/leituras/);
 });
 

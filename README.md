@@ -23,6 +23,7 @@ O endereço é publicamente acessível somente até a tela inicial. O conteúdo 
 - Oferece busca, criação rápida de páginas, ícone/emoji, favoritos, visualização e modo foco.
 - O editor salva automaticamente no banco e aceita uma estrutura Markdown simples.
 - Ao digitar `/` em uma linha vazia, exibe um menu de blocos inspirado no Notion para inserir título, lista de tarefas ou citação.
+- Ao criar uma página, exibe uma galeria com cinco modelos editáveis: Planejamento semanal, Projeto pessoal, Notas de reunião, Rastreador de hábitos e Controle financeiro. Também é possível começar em branco.
 - Possui uma central de ações rápidas acessível pela barra superior.
 
 ### Agenda
@@ -187,6 +188,10 @@ npm test
 
 **Data:** 16 de agosto de 2026.
 
+- Foi adicionada uma galeria responsiva de templates ao fluxo de criação de páginas.
+- Os cinco modelos seguem usos populares destacados pelo catálogo do Notion: planejamento, projetos, reuniões, hábitos e finanças.
+- Depois da escolha, o sistema cria a página persistente, abre o editor imediatamente e permite alterar título, emoji e todo o conteúdo.
+- A opção de página em branco continua disponível e o atalho `⌘N` agora abre a galeria.
 - Memória, Raciocínio e Conexões deixaram de ser demonstrativos: agora permitem criar, pesquisar, editar, favoritar, visualizar e excluir páginas com salvamento automático no D1.
 - Foi adicionado um menu de blocos inspirado no Notion, acionado por `/`, para títulos, tarefas e citações.
 - Foi criada a área Agenda, com calendário mensal, seleção de dias, tarefas, compromissos, horários, cores e conclusão de itens.

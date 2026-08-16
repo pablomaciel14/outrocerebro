@@ -52,11 +52,36 @@ const navItems = [
   { key: "leituras", Icon: BookOpenText, title: "LEITURAS", subtitle: "Leia e registre.", href: "/workspace/leituras" },
 ] as const;
 
+type PageTemplate = { id: string; title: string; description: string; icon: string; accent: AgendaColor; content: string };
+
 const pageStarters: Record<PageArea, { title: string; icon: string; content: string }> = {
   memoria: { title: "Nova página", icon: "📝", content: "# Nova página\n\nComece a escrever. Digite / em uma linha vazia para inserir um bloco." },
   raciocinio: { title: "Novo raciocínio", icon: "💡", content: "# Questão\n\n## Contexto\n\n## Hipóteses\n\n- [ ] Próxima ação" },
   conexoes: { title: "Nova conexão", icon: "🔗", content: "# Ponto de partida\n\nConecte esta página a outras ideias usando [[colchetes duplos]]." },
 };
+
+const popularTemplates: PageTemplate[] = [
+  {
+    id: "weekly-planner", title: "Planejamento semanal", description: "Prioridades, compromissos e tarefas para cada dia.", icon: "🗓️", accent: "violet",
+    content: "# Planejamento semanal\n\n## Objetivos da semana\n\n- [ ] Objetivo principal\n- [ ] Segundo objetivo\n- [ ] Algo importante para mim\n\n## Prioridades\n\n1. Prioridade alta\n2. Prioridade média\n3. Se houver tempo\n\n## Segunda a sexta\n\n### Segunda-feira\n- [ ] Tarefa\n\n### Terça-feira\n- [ ] Tarefa\n\n### Quarta-feira\n- [ ] Tarefa\n\n### Quinta-feira\n- [ ] Tarefa\n\n### Sexta-feira\n- [ ] Revisar a semana\n\n## Notas\n\n",
+  },
+  {
+    id: "personal-project", title: "Projeto pessoal", description: "Objetivo, etapas, decisões e próximos passos do projeto.", icon: "🚀", accent: "cyan",
+    content: "# Projeto pessoal\n\n> Descreva em uma frase o resultado que deseja alcançar.\n\n## Objetivo\n\n\n## Resultado esperado\n\n\n## Etapas\n\n- [ ] Planejamento\n- [ ] Pesquisa\n- [ ] Execução\n- [ ] Revisão\n- [ ] Conclusão\n\n## Próximas ações\n\n- [ ] Primeira ação\n\n## Recursos e referências\n\n- [[Página relacionada]]\n\n## Decisões tomadas\n\n",
+  },
+  {
+    id: "meeting-notes", title: "Notas de reunião", description: "Pauta, decisões, participantes e ações combinadas.", icon: "🤝", accent: "green",
+    content: "# Notas de reunião\n\n**Data:** \n**Participantes:** \n**Objetivo:** \n\n## Pauta\n\n1. Assunto principal\n2. Segundo assunto\n\n## Anotações\n\n\n## Decisões\n\n- Decisão tomada\n\n## Próximas ações\n\n- [ ] Responsável — ação — prazo\n\n## Próxima reunião\n\n",
+  },
+  {
+    id: "habit-tracker", title: "Rastreador de hábitos", description: "Hábitos da semana com acompanhamento e reflexão.", icon: "✅", accent: "amber",
+    content: "# Rastreador de hábitos\n\n## Hábitos desta semana\n\n### Movimento\n- [ ] Segunda\n- [ ] Terça\n- [ ] Quarta\n- [ ] Quinta\n- [ ] Sexta\n- [ ] Sábado\n- [ ] Domingo\n\n### Leitura\n- [ ] Segunda\n- [ ] Terça\n- [ ] Quarta\n- [ ] Quinta\n- [ ] Sexta\n- [ ] Sábado\n- [ ] Domingo\n\n## O que funcionou\n\n\n## O que ajustar na próxima semana\n\n",
+  },
+  {
+    id: "finance-control", title: "Controle financeiro", description: "Visão simples de receitas, despesas e metas do mês.", icon: "💳", accent: "coral",
+    content: "# Controle financeiro mensal\n\n## Resumo\n\n**Receitas:** R$ 0,00  \n**Despesas:** R$ 0,00  \n**Saldo:** R$ 0,00\n\n## Receitas\n\n- Fonte — R$ 0,00\n\n## Despesas fixas\n\n- [ ] Despesa — R$ 0,00\n\n## Despesas variáveis\n\n- Despesa — R$ 0,00\n\n## Metas financeiras\n\n- [ ] Meta do mês\n\n## Observações\n\n",
+  },
+];
 
 const weekdayNames = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -186,6 +211,8 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
   const [loading, setLoading] = useState(true);
   const [zen, setZen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()));
   const [agenda, setAgenda] = useState<AgendaItem[]>([]);
@@ -230,11 +257,12 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
     return () => window.clearTimeout(timer);
   }, [dirty, draft, selectedId]);
 
-  const addPage = useCallback(async () => {
+  const addPage = useCallback(async (template?: PageTemplate) => {
     if (isAgenda) return;
-    const starter = pageStarters[initialArea];
+    const starter = template ? { title: template.title, icon: template.icon, content: template.content } : pageStarters[initialArea];
+    setCreatingTemplate(template?.id ?? "blank");
     const response = await fetch("/api/workspace", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "page", area: initialArea, ...starter }) });
-    if (!response.ok) return;
+    if (!response.ok) { setCreatingTemplate(null); return; }
     const data = await response.json() as { page: WorkspacePage };
     setPages((current) => [data.page, ...current]);
     setSelectedId(data.page.id);
@@ -242,19 +270,27 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
     setDirty(false);
     setSaveState("saved");
     setCommandOpen(false);
+    setTemplateOpen(false);
+    setCreatingTemplate(null);
     window.setTimeout(() => editorRef.current?.focus(), 50);
   }, [initialArea, isAgenda]);
+
+  const openTemplatePicker = useCallback(() => {
+    if (isAgenda) return;
+    setCommandOpen(false);
+    setTemplateOpen(true);
+  }, [isAgenda]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); searchRef.current?.focus(); }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n" && !isAgenda) { event.preventDefault(); void addPage(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n" && !isAgenda) { event.preventDefault(); openTemplatePicker(); }
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "p") { event.preventDefault(); setCommandOpen((value) => !value); }
-      if (event.key === "Escape") setCommandOpen(false);
+      if (event.key === "Escape") { setCommandOpen(false); setTemplateOpen(false); }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [addPage, isAgenda]);
+  }, [isAgenda, openTemplatePicker]);
 
   async function deletePage() {
     if (!selectedPage || !window.confirm(`Excluir “${selectedPage.title}”?`)) return;
@@ -330,11 +366,11 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
       <aside className="notes-panel">
         <div className="notes-area-label"><ActiveAreaIcon /><span><small>ESPAÇO</small><b>{activeArea.label}</b></span></div>
         <label className="search-box"><Search /><input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar páginas..." aria-label="Buscar páginas" /><kbd>⌘K</kbd></label>
-        <button className="new-note" onClick={() => void addPage()}><Plus /> Nova página <ChevronDown /></button>
+        <button className="new-note" onClick={openTemplatePicker}><Plus /> Nova página <ChevronDown /></button>
         <div className="note-groups">
           {filteredPages.some((page) => page.favorite) ? <section className="note-group"><h2>FAVORITAS</h2>{filteredPages.filter((page) => page.favorite).map((page) => <button key={page.id} className={selectedId === page.id ? "note-row selected" : "note-row"} onClick={() => selectPage(page)}><span><i>{page.icon}</i>{page.title}</span><Star /></button>)}</section> : null}
           <section className="note-group"><h2>PÁGINAS</h2>{filteredPages.filter((page) => !page.favorite).map((page) => <button key={page.id} className={selectedId === page.id ? "note-row selected" : "note-row"} onClick={() => selectPage(page)}><span><i>{page.icon}</i>{page.title}</span><time>{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(new Date(page.updatedAt))}</time></button>)}</section>
-          {!loading && !filteredPages.length ? <div className="empty-pages"><FileText /><b>{query ? "Nada encontrado" : "Nenhuma página ainda"}</b><span>{query ? "Tente outro termo." : activeArea.empty}</span>{!query ? <button onClick={() => void addPage()}><Plus /> Criar primeira página</button> : null}</div> : null}
+          {!loading && !filteredPages.length ? <div className="empty-pages"><FileText /><b>{query ? "Nada encontrado" : "Nenhuma página ainda"}</b><span>{query ? "Tente outro termo." : activeArea.empty}</span>{!query ? <button onClick={openTemplatePicker}><Plus /> Criar primeira página</button> : null}</div> : null}
         </div>
       </aside>
 
@@ -348,7 +384,7 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
             {mode === "edit" ? <div className="block-editor"><textarea ref={editorRef} aria-label="Conteúdo da página" value={draft.content} onChange={(event) => updateDraft({ content: event.target.value })} placeholder="Escreva algo ou digite / para inserir um bloco…" spellCheck />{showSlashMenu ? <div className="slash-menu"><small>BLOCOS BÁSICOS</small><button onClick={() => insertBlock("## Título")}><Heading2 /><span><b>Título</b><small>Seção de destaque</small></span></button><button onClick={() => insertBlock("- [ ] Tarefa")}><ListChecks /><span><b>Lista de tarefas</b><small>Itens que podem ser concluídos</small></span></button><button onClick={() => insertBlock("> Citação")}><Quote /><span><b>Citação</b><small>Realce uma ideia importante</small></span></button></div> : null}</div> : <PagePreview content={draft.content} />}
           </article>
           <footer className="editor-footer"><span className="footer-icons"><Tags /><Link2 /></span><span>{draft.content.trim() ? draft.content.trim().split(/\s+/).length : 0} palavras · Markdown</span></footer>
-        </> : <div className="editor-empty"><ActiveAreaIcon /><h1>{activeArea.label}</h1><p>{activeArea.empty}</p><button onClick={() => void addPage()}><Plus /> Criar página</button></div>}
+        </> : <div className="editor-empty"><ActiveAreaIcon /><h1>{activeArea.label}</h1><p>{activeArea.empty}</p><button onClick={openTemplatePicker}><Plus /> Criar página</button></div>}
       </section>
 
       <aside className="context-panel workspace-context">
@@ -359,10 +395,19 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
     </>}
 
     {commandOpen ? <div className="command-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setCommandOpen(false)}><section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-title"><header><span><TerminalSquare /><b id="command-title">Ações rápidas</b></span><button aria-label="Fechar ações" onClick={() => setCommandOpen(false)}><X /></button></header><div>
-      {!isAgenda ? <button onClick={() => void addPage()}><Plus /><span><b>Nova página</b><small>Comece uma nova ideia</small></span><kbd>⌘N</kbd></button> : null}
+      {!isAgenda ? <button onClick={openTemplatePicker}><Plus /><span><b>Nova página ou template</b><small>Escolha uma estrutura para começar</small></span><kbd>⌘N</kbd></button> : null}
       <a href="/workspace?area=agenda"><CalendarDays /><span><b>Abrir agenda</b><small>Tarefas e compromissos</small></span><ChevronRight /></a>
       <a href="/workspace/leituras"><BookOpenText /><span><b>Abrir leituras</b><small>Continue seus PDFs</small></span><ChevronRight /></a>
       {!isAgenda ? <button onClick={() => { setZen((value) => !value); setCommandOpen(false); }}><Focus /><span><b>{zen ? "Sair do foco" : "Entrar em foco"}</b><small>Controle os painéis laterais</small></span></button> : null}
     </div><footer>Atalho: <kbd>⌘⇧P</kbd></footer></section></div> : null}
+    {templateOpen ? <div className="template-backdrop" role="button" tabIndex={-1} aria-label="Fechar galeria de templates" onKeyDown={(event) => event.key === "Escape" && setTemplateOpen(false)} onMouseDown={(event) => event.target === event.currentTarget && setTemplateOpen(false)}>
+      <section className="template-picker" role="dialog" aria-modal="true" aria-labelledby="template-title">
+        <header><div><small>GALERIA PESSOAL</small><h2 id="template-title">Comece com um template</h2><p>Escolha uma estrutura popular e edite tudo do seu jeito.</p></div><button aria-label="Fechar templates" onClick={() => setTemplateOpen(false)}><X /></button></header>
+        <div className="template-grid">{popularTemplates.map((template) => <button key={template.id} className={`template-card ${template.accent}`} disabled={creatingTemplate !== null} onClick={() => void addPage(template)}>
+          <span className="template-icon">{template.icon}</span><span className="template-copy"><b>{template.title}</b><small>{template.description}</small></span><span className="template-use">{creatingTemplate === template.id ? "Criando…" : <>Usar template <ChevronRight /></>}</span>
+        </button>)}</div>
+        <footer><button disabled={creatingTemplate !== null} onClick={() => void addPage()}><FileText />{creatingTemplate === "blank" ? "Criando…" : "Começar com página em branco"}</button><span>O conteúdo será salvo automaticamente e poderá ser totalmente editado.</span></footer>
+      </section>
+    </div> : null}
   </main>;
 }
