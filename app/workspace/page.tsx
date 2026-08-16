@@ -3,7 +3,11 @@ import WorkspaceClient from "./WorkspaceClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function WorkspacePage() {
+type WorkspaceArea = "memoria" | "raciocinio" | "conexoes";
+
+export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ area?: string }> }) {
   const user = await requirePersonalUser();
-  return <WorkspaceClient displayName={user.displayName} email={user.email} />;
+  const requestedArea = (await searchParams).area;
+  const initialArea: WorkspaceArea = requestedArea === "raciocinio" || requestedArea === "conexoes" ? requestedArea : "memoria";
+  return <WorkspaceClient displayName={user.displayName} email={user.email} initialArea={initialArea} />;
 }

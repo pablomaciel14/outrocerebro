@@ -26,11 +26,17 @@ const initialNotes: Note[] = [
 ];
 
 const navItems = [
-  { Icon: Brain, title: "MEMÓRIA", subtitle: "Guarde o que importa.", available: true },
-  { Icon: Lightbulb, title: "RACIOCÍNIO", subtitle: "Organize suas ideias.", available: false },
-  { Icon: Network, title: "CONEXÕES", subtitle: "Descubra relações.", available: false },
-  { Icon: BookOpenText, title: "LEITURAS", subtitle: "Leia e registre.", available: true },
+  { key: "memoria", Icon: Brain, title: "MEMÓRIA", subtitle: "Guarde o que importa.", href: "/workspace" },
+  { key: "raciocinio", Icon: Lightbulb, title: "RACIOCÍNIO", subtitle: "Organize suas ideias.", href: "/workspace?area=raciocinio" },
+  { key: "conexoes", Icon: Network, title: "CONEXÕES", subtitle: "Descubra relações.", href: "/workspace?area=conexoes" },
+  { key: "leituras", Icon: BookOpenText, title: "LEITURAS", subtitle: "Leia e registre.", href: "/workspace/leituras" },
 ];
+
+const areaDetails = {
+  memoria: { label: "Memória", description: "Notas, registros e ideias reunidos em um só lugar.", Icon: Brain },
+  raciocinio: { label: "Raciocínio", description: "Uma visão focada para organizar contexto, estratégias e próximas ações.", Icon: Lightbulb },
+  conexoes: { label: "Conexões", description: "Backlinks e relações entre temas para revelar novas associações.", Icon: Network },
+} as const;
 
 const initialTasks = [
   { title: "Revisar precedente STJ", date: "25/05", done: false },
@@ -43,7 +49,7 @@ function Mark({ compact = false }: { compact?: boolean }) {
   return <img className={compact ? "brand-symbol compact" : "brand-symbol"} src="/outro-cerebro-symbol.webp" alt="" aria-hidden="true" />;
 }
 
-export default function WorkspaceClient({ displayName, email }: { displayName: string; email: string }) {
+export default function WorkspaceClient({ displayName, email, initialArea }: { displayName: string; email: string; initialArea: keyof typeof areaDetails }) {
   const [notes, setNotes] = useState(initialNotes);
   const [activeNote, setActiveNote] = useState(1);
   const [query, setQuery] = useState("");
@@ -84,6 +90,8 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
 
   const filtered = notes.filter((note) => note.title.toLowerCase().includes(query.toLowerCase()));
   const selected = notes.find((note) => note.id === activeNote) ?? notes[0];
+  const activeArea = areaDetails[initialArea];
+  const ActiveAreaIcon = activeArea.Icon;
 
   return (
     <main className={zen ? "workspace zen" : "workspace"}>
@@ -108,11 +116,11 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <p>Seu espaço privado<br />para pensar.</p>
         </div>
         <nav aria-label="Áreas do conhecimento">
-          {navItems.map(({ Icon, title, subtitle, available }) => (
-            <button key={title} disabled={!available} title={available ? title : `${title} · em breve`} onClick={() => title === "LEITURAS" && (window.location.href = "/workspace/leituras")} className={title === "MEMÓRIA" ? "nav-item active" : "nav-item"}>
+          {navItems.map(({ key, Icon, title, subtitle, href }) => (
+            <a key={title} href={href} aria-current={key === initialArea ? "page" : undefined} className={key === initialArea ? "nav-item active" : "nav-item"}>
               <span className="nav-icon"><Icon /></span>
-              <span><b>{title}{!available && <em>EM BREVE</em>}</b><small>{subtitle}</small></span>
-            </button>
+              <span><b>{title}</b><small>{subtitle}</small></span>
+            </a>
           ))}
         </nav>
         <div className="privacy"><LockKeyhole /><p>Uso estritamente pessoal<small>Seus dados. Suas ideias.</small></p></div>
@@ -154,6 +162,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <button className={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}><PencilLine /> Editar</button>
           <button className={mode === "read" ? "active" : ""} onClick={() => setMode("read")}><Eye /> Ler</button>
         </div>
+        {initialArea !== "memoria" && <aside className="area-context" aria-label={`Área ${activeArea.label}`}><ActiveAreaIcon /><div><small>ÁREA ATIVA</small><b>{activeArea.label}</b><p>{activeArea.description}</p></div></aside>}
         <article className={mode === "read" ? "note-content reading" : "note-content"}>
           <h2><span>#</span> {selected.title}</h2>
           <p>O planejamento tributário é uma das frentes mais importantes para redução de riscos e aumento de eficiência fiscal de pessoas e empresas.</p>
