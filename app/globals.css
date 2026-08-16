@@ -431,6 +431,38 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .pdf-canvas {
   image-rendering: auto;
 }
+.document-stage > [data-highlight-source="markdown"] {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  place-items: start center;
+  overflow: hidden;
+}
+.markdown-view {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.markdown-view :where(h1,h2,h3,h4,p,blockquote,a,mark,pre,code) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.markdown-view :where(pre,code) {
+  white-space: pre-wrap;
+}
+.markdown-view :where(img,video,iframe,svg) {
+  max-width: 100%;
+  height: auto;
+}
+.markdown-view table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
 .page-controls button {
   display: inline-flex;
   align-items: center;
