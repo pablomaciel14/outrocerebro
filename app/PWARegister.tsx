@@ -5,10 +5,8 @@ import { useEffect } from "react";
 export function PWARegister() {
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch((err) => {
-          console.error("Erro ao registrar o Service Worker do PWA:", err);
-        });
+      navigator.serviceWorker.register("/sw.js").catch((err) => {
+        console.error("Erro ao registrar o Service Worker do PWA:", err);
       });
     }
   }, []);
