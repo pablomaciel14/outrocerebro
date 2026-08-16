@@ -42,7 +42,7 @@ Site principal: <https://outrocerebro.com.br>
 
 ## Última atualização funcional
 
-Em **16 de agosto de 2026**, foi adicionada uma galeria responsiva com cinco templates editáveis: Planejamento semanal, Projeto pessoal, Notas de reunião, Rastreador de hábitos e Controle financeiro. Ao escolher um modelo, uma página persistente é criada e aberta imediatamente no editor com salvamento automático. A área de Leituras não foi alterada.
+Em **16 de agosto de 2026**, o sistema foi configurado como um **Progressive Web App (PWA)**, permitindo sua instalação no celular, tablet e desktop. Foi adicionado um Service Worker básico e botões inteligentes de "Instalar aplicativo" nas barras superiores do Workspace e Leituras, com detecção e fallback especial para usuários de iOS.
 
 ## Comandos essenciais
 

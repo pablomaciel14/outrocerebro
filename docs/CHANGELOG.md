@@ -2,6 +2,15 @@
 
 [← Índice](../README.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
+## 2026-08-16 — Suporte a PWA e Instalação
+
+Última atualização funcional.
+
+- O sistema foi configurado como Progressive Web App (PWA).
+- Adicionado Service Worker (`sw.js`) e componente de registro para cumprir os requisitos de instalabilidade.
+- Adicionado botão "Instalar aplicativo" nativo e inteligente nas barras superiores (Workspace principal e Leituras).
+- Adicionadas instruções contextuais para instalação no iOS (Safari).
+
 ## 2026-08-16 — Correção: perda de edições no autosave ao trocar de página
 
 - Área afetada: Memória, Raciocínio e Conexões (editor de páginas).
@@ -12,8 +21,6 @@
 - Limitações restantes: `keepalive` limita o corpo da requisição a cerca de 64 KB; uma falha de rede durante o flush em segundo plano pode exibir o indicador de erro na página atualmente aberta, não necessariamente na página que falhou ao salvar.
 
 ## 2026-08-16 — Galeria de templates editáveis
-
-Última atualização funcional.
 
 - Adicionada galeria responsiva ao fluxo de criação de páginas.
 - Incluídos cinco modelos: Planejamento semanal, Projeto pessoal, Notas de reunião, Rastreador de hábitos e Controle financeiro.

@@ -8,6 +8,7 @@ import {
   Search, Star, Tags, TerminalSquare, Trash2, X,
 } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
+import InstallAppButton from "../InstallAppButton";
 
 type WorkspaceArea = "memoria" | "raciocinio" | "conexoes" | "agenda";
 type PageArea = Exclude<WorkspaceArea, "agenda">;
@@ -384,6 +385,7 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
       <div className="top-actions">
         {!isAgenda ? <button aria-label="Buscar" onClick={() => searchRef.current?.focus()}><Search /></button> : null}
         <button aria-label="Abrir ações rápidas" title="Ações rápidas" onClick={() => setCommandOpen(true)}><TerminalSquare /></button>
+        <InstallAppButton />
         <ThemeToggle variant="icon" />
         {!isAgenda ? <button aria-label="Alternar foco" onClick={() => setZen((value) => !value)}><Focus /></button> : null}
         <form action="/api/auth/logout" method="post"><button className="avatar" aria-label={`Sair da conta de ${displayName}`} title={`${displayName} · ${email} · Sair`} type="submit">{displayName.charAt(0).toUpperCase()}</button></form>

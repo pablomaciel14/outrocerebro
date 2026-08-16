@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, BookOpenText, Check, ChevronLeft, ChevronRight, Columns2, ExternalLink, FileCode2, FileText, Focus, GitBranch, History, LockKeyhole, Maximize2, Minimize2, Network, Pause, Play, Search, Settings2, Timer, Trash2, Upload, ZoomIn, ZoomOut } from "lucide-react";
 import ThemeToggle from "../../ThemeToggle";
+import InstallAppButton from "../../InstallAppButton";
 
 type Status = "wishlist" | "reading" | "read";
 type Reading = {
@@ -449,7 +450,7 @@ export default function ReadingClient() {
     <main className={`reading-shell reader-theme-${readerTheme}${lightMode ? " light-reading" : ""}${focusMode ? " immersive-reader" : ""}${focusMode && !chromeVisible ? " chrome-hidden" : ""}`}>
       <header className="reading-topbar">
         <a href="/workspace" className="reading-brand"><img src="/outro-cerebro-symbol.webp" alt="" aria-hidden="true" /><b>Outro Cérebro</b></a>
-        <div><span className="saved-indicator">● Progresso salvo</span><ThemeToggle /><a href="/workspace">Voltar às notas</a></div>
+        <div><span className="saved-indicator">● Progresso salvo</span><InstallAppButton /><ThemeToggle /><a href="/workspace">Voltar às notas</a></div>
       </header>
       <aside className="library-panel">
         <div className="library-title"><div><small>BIBLIOTECA PESSOAL</small><h1>Minhas leituras</h1></div><span>{items.length}</span></div>
