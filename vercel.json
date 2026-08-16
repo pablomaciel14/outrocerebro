@@ -6,12 +6,12 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "https://outro-cerebro-pessoal.pablomaciel-adv.chatgpt.site/",
+      "destination": "https://outrocerebro.com.br/",
       "permanent": false
     },
     {
       "source": "/:path*",
-      "destination": "https://outro-cerebro-pessoal.pablomaciel-adv.chatgpt.site/:path*",
+      "destination": "https://outrocerebro.com.br/:path*",
       "permanent": false
     }
   ]
