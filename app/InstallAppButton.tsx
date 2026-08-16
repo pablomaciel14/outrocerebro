@@ -36,11 +36,6 @@ export default function InstallAppButton() {
     return null; // Do not show button if already installed
   }
 
-  // If there's no prompt available and it's not iOS, we might not be able to install, or we are on desktop where it's already installed.
-  if (!deferredPrompt && !isIOS) {
-    return null;
-  }
-
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -50,6 +45,8 @@ export default function InstallAppButton() {
       }
     } else if (isIOS) {
       alert("Para instalar no iOS: Toque no botão Compartilhar (quadrado com seta para cima) na barra do Safari e escolha 'Adicionar à Tela de Início'.");
+    } else {
+      alert("Para instalar, clique no ícone de instalação na barra de endereços do seu navegador, ou busque por 'Instalar aplicativo' no menu principal.");
     }
   };
 
