@@ -1,0 +1,27 @@
+{
+  "name": "outro-cerebro-desktop",
+  "version": "1.0.0",
+  "description": "Outro Cérebro Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder -w"
+  },
+  "author": "Pablo Maciel",
+  "license": "ISC",
+  "dependencies": {
+    "electron-is-dev": "^2.0.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.outrocerebro.desktop",
+    "productName": "Outro Cérebro",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    }
+  }
+}

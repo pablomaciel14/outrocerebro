@@ -42,7 +42,7 @@ Site principal: <https://outrocerebro.com.br>
 
 ## Última atualização funcional
 
-Em **16 de agosto de 2026**, o sistema foi configurado como um **Progressive Web App (PWA)**, permitindo sua instalação no celular, tablet e desktop. Foi adicionado um Service Worker básico e botões inteligentes de "Instalar aplicativo" nas barras superiores do Workspace e Leituras, com detecção e fallback especial para usuários de iOS.
+Em **16 de agosto de 2026**, foi criado o **Aplicativo Desktop nativo** para Windows usando Electron. O aplicativo empacota a versão web (`https://outrocerebro.com.br`) em uma janela nativa isolada. Por conta desta arquitetura, **qualquer alteração no código web que for publicada será refletida instantaneamente no aplicativo desktop e no PWA**, sem necessidade de gerar novos instaladores ou atualizar o aplicativo localmente.
 
 ## Comandos essenciais
 

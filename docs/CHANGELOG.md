@@ -2,6 +2,12 @@
 
 [← Índice](../README.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
+## 2026-08-16 — Aplicativo Desktop Oficial (Electron)
+
+- Criado invólucro (wrapper) nativo para Windows utilizando Electron.
+- O aplicativo carrega a mesma URL do sistema (`https://outrocerebro.com.br`), garantindo que qualquer mudança feita e publicada no site web reflita instantaneamente no aplicativo desktop sem necessidade de novas instalações.
+- Código-fonte adicionado na pasta `desktop/`.
+
 ## 2026-08-16 — Correção: identidade dupla de userId via headers do ChatGPT Apps SDK
 
 - Área afetada: autenticação (`app/personal-auth.ts`, `app/chatgpt-auth.ts`); todo dado particionado por `userId` (páginas, agenda, leituras, destaques, marcadores e caminho dos PDFs no R2).

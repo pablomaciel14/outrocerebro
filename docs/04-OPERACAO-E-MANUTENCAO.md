@@ -57,6 +57,20 @@ Inspecionar o SQL gerado em `drizzle/` antes de publicar. Não editar migraçõe
 - Manter PDF.js carregado dinamicamente.
 - Testar nitidez, retomada, toque lateral, destaques e largura do Markdown após alterações.
 
+## Aplicativo Desktop (Electron)
+
+A pasta `desktop/` contém um invólucro (wrapper) nativo para Windows construído com Electron. 
+Ele não roda o código do projeto localmente, mas sim atua como um navegador dedicado sem bordas que carrega `https://outrocerebro.com.br`.
+
+**Regra de ouro:** Como o aplicativo Desktop carrega o site de produção em tempo real, **nenhuma atualização é necessária no instalador Desktop quando você altera o código do sistema**. Todas as mudanças publicadas no web refletem imediatamente no Desktop na próxima inicialização.
+
+Para gerar um novo instalador (apenas se alterar o ícone ou configurações de janela):
+```bash
+cd desktop
+npm install
+npx electron-packager . "Outro Cerebro" --platform=win32 --arch=x64 --icon=build/icon.ico --out=dist --overwrite
+```
+
 ## Publicação
 
 - Hospedagem de produção: Sites.
