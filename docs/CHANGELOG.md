@@ -2,6 +2,15 @@
 
 [← Índice](../README.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
+## 2026-08-16 — Correção: perda de edições no autosave ao trocar de página
+
+- Área afetada: Memória, Raciocínio e Conexões (editor de páginas).
+- Corrigido: o debounce de salvamento automático (700 ms) era cancelado sem persistir a edição sempre que o usuário trocava de página, criava uma nova página ou fechava a aba antes do temporizador disparar — a edição era perdida sem aviso.
+- Comportamento novo: ao trocar de página, criar página (template ou em branco) ou fechar/sair da aba (`beforeunload`/`pagehide`), a edição pendente é persistida imediatamente via `fetch(..., { keepalive: true })`.
+- Dados/migrações: nenhuma.
+- Validação: revisão manual do fluxo de edição e troca de página; build/lint não puderam ser executados neste ambiente (dependências não instaladas). Executar `npm run lint` e `npm run build` antes de publicar.
+- Limitações restantes: `keepalive` limita o corpo da requisição a cerca de 64 KB; uma falha de rede durante o flush em segundo plano pode exibir o indicador de erro na página atualmente aberta, não necessariamente na página que falhou ao salvar.
+
 ## 2026-08-16 — Galeria de templates editáveis
 
 Última atualização funcional.

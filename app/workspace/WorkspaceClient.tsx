@@ -243,10 +243,30 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
 
   const selectedPage = pages.find((page) => page.id === selectedId) ?? null;
 
+  const draftStateRef = useRef({ dirty, draft, selectedId });
+  useEffect(() => {
+    draftStateRef.current = { dirty, draft, selectedId };
+  }, [dirty, draft, selectedId]);
+
+  const persistPage = useCallback((id: string, payload: typeof draft, keepalive = false) => {
+    return fetch("/api/workspace", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "page", id, ...payload }), keepalive });
+  }, []);
+
+  // keepalive fetch caps the body around 64KB but still beats losing the edit outright when the tab is closing.
+  const flushPendingSave = useCallback(() => {
+    const { dirty: pendingDirty, draft: pendingDraft, selectedId: pendingId } = draftStateRef.current;
+    if (!pendingDirty || !pendingId) return;
+    setPages((current) => current.map((page) => page.id === pendingId ? { ...page, ...pendingDraft, updatedAt: new Date().toISOString() } : page));
+    persistPage(pendingId, pendingDraft, true).then((response) => { if (!response.ok) setSaveState("error"); }).catch(() => setSaveState("error"));
+    draftStateRef.current = { ...draftStateRef.current, dirty: false };
+    setDirty(false);
+    setSaveState("saved");
+  }, [persistPage]);
+
   useEffect(() => {
     if (!dirty || !selectedId) return;
     const timer = window.setTimeout(async () => {
-      const response = await fetch("/api/workspace", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "page", id: selectedId, ...draft }) });
+      const response = await persistPage(selectedId, draft);
       if (response.ok) {
         const data = await response.json() as { page: WorkspacePage };
         setPages((current) => current.map((page) => page.id === data.page.id ? data.page : page));
@@ -255,10 +275,21 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
       } else setSaveState("error");
     }, 700);
     return () => window.clearTimeout(timer);
-  }, [dirty, draft, selectedId]);
+  }, [dirty, draft, selectedId, persistPage]);
+
+  useEffect(() => {
+    window.addEventListener("beforeunload", flushPendingSave);
+    window.addEventListener("pagehide", flushPendingSave);
+    return () => {
+      window.removeEventListener("beforeunload", flushPendingSave);
+      window.removeEventListener("pagehide", flushPendingSave);
+      flushPendingSave();
+    };
+  }, [flushPendingSave]);
 
   const addPage = useCallback(async (template?: PageTemplate) => {
     if (isAgenda) return;
+    flushPendingSave();
     const starter = template ? { title: template.title, icon: template.icon, content: template.content } : pageStarters[initialArea];
     setCreatingTemplate(template?.id ?? "blank");
     const response = await fetch("/api/workspace", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "page", area: initialArea, ...starter }) });
@@ -273,7 +304,7 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
     setTemplateOpen(false);
     setCreatingTemplate(null);
     window.setTimeout(() => editorRef.current?.focus(), 50);
-  }, [initialArea, isAgenda]);
+  }, [initialArea, isAgenda, flushPendingSave]);
 
   const openTemplatePicker = useCallback(() => {
     if (isAgenda) return;
@@ -300,6 +331,8 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
       setPages(remaining);
       setSelectedId(remaining[0]?.id ?? null);
       if (remaining[0]) setDraft({ title: remaining[0].title, content: remaining[0].content, icon: remaining[0].icon, favorite: remaining[0].favorite });
+      setDirty(false);
+      setSaveState("saved");
     }
   }
 
@@ -310,6 +343,7 @@ export default function WorkspaceClient({ displayName, email, initialArea }: { d
   }
 
   function selectPage(page: WorkspacePage) {
+    flushPendingSave();
     setSelectedId(page.id);
     setDraft({ title: page.title, content: page.content, icon: page.icon, favorite: page.favorite });
     setDirty(false);
