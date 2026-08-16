@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 type PdfBucket = {
   put(key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string } }): Promise<unknown>;
-  get(key: string): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string } } | null>;
+  head(key: string): Promise<{ size: number; httpMetadata?: { contentType?: string } } | null>;
+  get(key: string, options?: { range?: { offset: number; length: number } }): Promise<{ body: ReadableStream; size: number; httpMetadata?: { contentType?: string } } | null>;
   delete(key: string): Promise<void>;
 };
 
@@ -25,6 +26,17 @@ async function authenticatedUser() {
   return user;
 }
 
+function requestedRange(header: string | null, size: number) {
+  if (!header) return null;
+  const match = /^bytes=(\d+)-(\d*)$/.exec(header.trim());
+  if (!match) return undefined;
+  const start = Number(match[1]);
+  const requestedEnd = match[2] ? Number(match[2]) : size - 1;
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(requestedEnd) || start < 0 || start >= size || requestedEnd < start) return undefined;
+  const end = Math.min(requestedEnd, size - 1);
+  return { offset: start, length: end - start + 1, end };
+}
+
 export async function GET(request: Request) {
   const user = await authenticatedUser();
   if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
@@ -36,16 +48,28 @@ export async function GET(request: Request) {
     const [record] = await getDb().select({ r2Key: readings.r2Key, fileName: readings.fileName })
       .from(readings).where(and(eq(readings.id, fileId), eq(readings.userId, user.userId))).limit(1);
     if (!record) return Response.json({ error: "Arquivo não encontrado" }, { status: 404 });
-    const object = await bucket().get(record.r2Key);
+    const metadata = await bucket().head(record.r2Key);
+    if (!metadata) return Response.json({ error: "PDF não encontrado" }, { status: 404 });
+    const range = requestedRange(request.headers.get("range"), metadata.size);
+    if (range === undefined) return new Response(null, {
+      status: 416,
+      headers: { "content-range": `bytes */${metadata.size}`, "accept-ranges": "bytes", "cache-control": "private, no-store" },
+    });
+    const object = await bucket().get(record.r2Key, range ? { range: { offset: range.offset, length: range.length } } : undefined);
     if (!object) return Response.json({ error: "PDF não encontrado" }, { status: 404 });
+    const responseHeaders: Record<string, string> = {
+      "content-type": object.httpMetadata?.contentType ?? metadata.httpMetadata?.contentType ?? "application/pdf",
+      "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(record.fileName)}`,
+      "content-length": String(range?.length ?? metadata.size),
+      "accept-ranges": "bytes",
+      "cache-control": "private, no-store",
+      "x-content-type-options": "nosniff",
+      "content-security-policy": "sandbox",
+    };
+    if (range) responseHeaders["content-range"] = `bytes ${range.offset}-${range.end}/${metadata.size}`;
     return new Response(object.body, {
-      headers: {
-        "content-type": object.httpMetadata?.contentType ?? "application/pdf",
-        "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(record.fileName)}`,
-        "cache-control": "private, no-store",
-        "x-content-type-options": "nosniff",
-        "content-security-policy": "sandbox",
-      },
+      status: range ? 206 : 200,
+      headers: responseHeaders,
     });
   }
 

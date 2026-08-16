@@ -34,7 +34,7 @@ function linkify(text: string) {
 }
 
 async function extractMarkdown(file: File) {
-  const pdfjs = await import("pdfjs-dist");
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   const document = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const title = file.name.replace(/\.pdf$/i, "");
@@ -116,12 +116,15 @@ function PdfCanvas({ reading, page, highlights, scale, fitWidth, onLoaded }: { r
     (async () => {
       try {
         setError("");
-        const pdfjs = await import("pdfjs-dist");
+        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        const response = await fetch(`/api/readings?file=${encodeURIComponent(reading.id)}`);
-        if (!response.ok) throw new Error("Não foi possível abrir o arquivo.");
-        const data = await response.arrayBuffer();
-        const loadingTask = pdfjs.getDocument({ data });
+        const loadingTask = pdfjs.getDocument({
+          url: `/api/readings?file=${encodeURIComponent(reading.id)}`,
+          rangeChunkSize: 256 * 1024,
+          disableAutoFetch: false,
+          disableRange: false,
+          disableStream: false,
+        });
         task = loadingTask;
         const pdf = await loadingTask.promise;
         if (cancelled) return;
