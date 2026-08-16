@@ -2,6 +2,15 @@
 
 [← Índice](../README.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
+## 2026-08-16 — Correção: identidade dupla de userId via headers do ChatGPT Apps SDK
+
+- Área afetada: autenticação (`app/personal-auth.ts`, `app/chatgpt-auth.ts`); todo dado particionado por `userId` (páginas, agenda, leituras, destaques, marcadores e caminho dos PDFs no R2).
+- Corrigido: depois de validar o cookie de sessão, `getPersonalUser()` sobrescrevia `userId` com o valor vindo dos headers `oai-authenticated-user-id`/`-email` (usados quando o app é aberto como ChatGPT App), sem nenhuma verificação de assinatura desses headers. Isso fazia dados criados via login normal e via ChatGPT ficarem em partições diferentes, e — caso os headers não fossem estritamente controlados pela camada de hospedagem — abria caminho para uma requisição com cookie válido mais um header forjado redirecionar leituras/escritas para outra partição.
+- Comportamento novo: `userId` vem sempre do e-mail já verificado no cookie assinado `__Host-oc_session`. Os headers do ChatGPT Apps SDK agora só alimentam o `displayName` (cosmético); nunca autorizam acesso nem escolhem partição de dados. Documentado em [docs/03-DADOS-E-SEGURANCA.md](03-DADOS-E-SEGURANCA.md).
+- Dados/migrações: nenhuma migração de schema. Se alguma sessão via ChatGPT App chegou a criar dados sob um `userId` diferente do e-mail (cenário não documentado e provavelmente nunca exercitado), esses registros deixam de ser alcançáveis por qualquer caminho de acesso; não foi feita varredura no D1 para confirmar se isso ocorreu.
+- Validação: revisão manual do fluxo de autenticação e de todos os usos de `.userId` nas rotas de API; build/lint não executados neste ambiente (dependências não instaladas).
+- Limitações restantes: nenhuma verificação criptográfica dos headers `oai-authenticated-user-*` foi adicionada — eles continuam não confiáveis por design; o fluxo de ChatGPT App em si permanece sem teste automatizado.
+
 ## 2026-08-16 — Correção: página de login travada em janelas baixas
 
 - Área afetada: página de login (`/`).

@@ -69,9 +69,11 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
     const authorizedEmail = runtimeEnv.AUTHORIZED_EMAIL?.toLowerCase();
     const now = Math.floor(Date.now() / 1000);
     if (!authorizedEmail || payload.aud !== "outro-cerebro" || payload.v !== 2 || !payload.sub || !payload.nonce || payload.email !== authorizedEmail || payload.iat > now + 60 || payload.exp <= now || payload.exp - payload.iat > SESSION_SECONDS) return null;
+    // userId is always the verified cookie identity — oai-authenticated-user-* headers are unsigned and
+    // must never gate data partitioning (they only supply a cosmetic display name when present).
     const workspaceUser = await getChatGPTUser();
     return {
-      userId: workspaceUser?.userId ?? payload.email,
+      userId: payload.email,
       displayName: workspaceUser?.displayName ?? "Pablo Maciel",
       email: payload.email,
     };

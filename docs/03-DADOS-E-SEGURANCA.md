@@ -41,6 +41,14 @@ Todo registro de produto possui `userId`. Toda consulta deve combinar o identifi
 6. Páginas privadas usam `requirePersonalUser()`.
 7. APIs usam `getPersonalUser()` e rejeitam acesso sem sessão.
 
+### Headers do ChatGPT Apps SDK
+
+O app também pode ser aberto como um ChatGPT App (ver `.openai/hosting.json`). Nesse caso a plataforma da OpenAI envia os headers `oai-authenticated-user-id`, `oai-authenticated-user-email` e `oai-authenticated-user-full-name` (lidos em `app/chatgpt-auth.ts`).
+
+- Esses headers **não são assinados nem verificados** pelo servidor; qualquer requisição pode enviá-los.
+- Por isso, `userId` — a chave usada para particionar todo dado no D1 e no caminho de arquivos no R2 — vem **sempre** do e-mail já verificado no cookie `__Host-oc_session`, nunca dos headers.
+- Os headers só alimentam `displayName` (texto cosmético exibido na interface); nunca autorizam acesso nem determinam qual partição de dados é lida ou escrita.
+
 ## Camadas de segurança
 
 - usuário único e allowlist de e-mail;
