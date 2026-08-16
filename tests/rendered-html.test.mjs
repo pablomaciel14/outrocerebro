@@ -36,3 +36,19 @@ test("workspace persistence remains authenticated and owner-scoped", async () =>
   assert.match(schema, /workspace_pages/);
   assert.match(schema, /agenda_items/);
 });
+
+test("documentation gives maintainers and AIs a linked project map", async () => {
+  const [agents, readme, graph, changelog] = await Promise.all([
+    readFile(new URL("AGENTS.md", root), "utf8"),
+    readFile(new URL("README.md", root), "utf8"),
+    readFile(new URL("docs/GRAFO-DA-DOCUMENTACAO.md", root), "utf8"),
+    readFile(new URL("docs/CHANGELOG.md", root), "utf8"),
+  ]);
+
+  assert.match(agents, /ponto de entrada permanente/i);
+  assert.match(agents, /docs\/00-VISAO-GERAL\.md/);
+  assert.match(readme, /AGENTS\.md/);
+  assert.match(graph, /flowchart TD/);
+  assert.match(graph, /click READ/);
+  assert.match(changelog, /Galeria de templates editáveis/);
+});
