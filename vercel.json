@@ -5,6 +5,11 @@
   "outputDirectory": "vercel-static",
   "redirects": [
     {
+      "source": "/",
+      "destination": "https://outro-cerebro-pessoal.pablomaciel-adv.chatgpt.site/",
+      "permanent": false
+    },
+    {
       "source": "/:path*",
       "destination": "https://outro-cerebro-pessoal.pablomaciel-adv.chatgpt.site/:path*",
       "permanent": false
