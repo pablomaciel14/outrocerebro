@@ -427,6 +427,80 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   100% { opacity: 0; visibility: hidden; }
 }
 
+/* Nitidez Retina e layout adaptativo do leitor */
+.pdf-canvas {
+  image-rendering: auto;
+}
+.page-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+@media (max-width:960px) {
+  .reading-shell {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: 58px minmax(250px,36vh) minmax(620px,64vh);
+  }
+  .reading-topbar { grid-column:1; }
+  .library-panel {
+    grid-column:1;
+    grid-row:2;
+    border-right:0;
+    border-bottom:1px solid var(--border);
+  }
+  .library-list {
+    display:flex;
+    overflow-x:auto;
+    overscroll-behavior-inline:contain;
+    scroll-snap-type:x proximity;
+  }
+  .library-item {
+    min-width:min(270px,78vw);
+    scroll-snap-align:start;
+  }
+  .library-private { display:none; }
+  .reader-stage,.reading-empty {
+    grid-column:1;
+    grid-row:3;
+  }
+  .reader-heading { padding-inline:14px; }
+  .reader-heading h1 { max-width:38vw; }
+  .reader-tools select,.document-tools { display:none; }
+  .reader-tabs { overflow-x:auto; scrollbar-width:none; }
+  .reader-tabs::-webkit-scrollbar { display:none; }
+  .reader-tabs button { min-height:38px; white-space:nowrap; }
+  .markdown-view { width:min(100%,760px); }
+  .reading-graph { width:min(100%,680px); }
+  .immersive-reader .reader-stage { width:100dvw; height:100dvh; }
+}
+
+@media (max-width:600px) {
+  .reading-shell {
+    grid-template-rows: 54px 250px minmax(580px,calc(100dvh - 54px));
+  }
+  .reading-topbar { height:54px; padding-inline:12px; }
+  .reading-topbar > div { gap:7px; }
+  .reading-topbar > div > a,.reading-topbar .theme-toggle:not(.theme-icon) { display:none; }
+  .reading-brand b { font-size:12px; }
+  .library-panel { padding-top:14px; }
+  .upload-pdf { margin-top:12px; }
+  .reader-heading { flex-basis:60px; gap:8px; padding-inline:9px; }
+  .reader-heading h1 { max-width:34vw; font-size:13px; }
+  .reader-tools { gap:3px; }
+  .reader-tools button,.reader-back { min-width:36px; width:36px; height:36px; }
+  .reader-tabs button { flex:1 0 auto; padding-inline:10px; }
+  .document-stage { padding-inline:0; }
+  .markdown-view { padding:28px 20px; border-inline:0; }
+  .page-controls { gap:8px; padding-inline:8px; }
+  .page-controls button { min-width:44px; width:44px; padding:0; }
+  .page-controls button > span { display:none; }
+  .page-controls > span { min-width:102px; }
+  .highlight-composer { width:calc(100vw - 24px); right:12px; bottom:12px; }
+  .reader-popover { right:8px; width:calc(100% - 16px); }
+}
+
 /* Iconografia premium */
 .top-actions button svg { width: 15px; height: 15px; stroke-width: 1.65; }
 .nav-icon svg { width: 22px; height: 22px; stroke-width: 1.45; filter: drop-shadow(0 0 8px currentColor); }

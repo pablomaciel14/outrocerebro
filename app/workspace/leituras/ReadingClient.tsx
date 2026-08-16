@@ -135,11 +135,24 @@ function PdfCanvas({ reading, page, highlights, scale, fitWidth, onLoaded }: { r
         const viewport = pdfPage.getViewport({ scale: fittedScale });
         const canvas = canvasRef.current;
         if (!canvas || cancelled) return;
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        const deviceScale = Math.min(window.devicePixelRatio || 1, 2.5);
+        const maximumCanvasPixels = 16_000_000;
+        const requestedPixels = viewport.width * viewport.height * deviceScale * deviceScale;
+        const outputScale = requestedPixels > maximumCanvasPixels
+          ? deviceScale * Math.sqrt(maximumCanvasPixels / requestedPixels)
+          : deviceScale;
+        canvas.width = Math.max(1, Math.floor(viewport.width * outputScale));
+        canvas.height = Math.max(1, Math.floor(viewport.height * outputScale));
+        canvas.style.width = `${Math.floor(viewport.width)}px`;
+        canvas.style.height = `${Math.floor(viewport.height)}px`;
         const context = canvas.getContext("2d");
         if (!context) return;
-        await pdfPage.render({ canvasContext: context, canvas, viewport }).promise;
+        await pdfPage.render({
+          canvasContext: context,
+          canvas,
+          viewport,
+          transform: outputScale === 1 ? undefined : [outputScale, 0, 0, outputScale, 0, 0],
+        }).promise;
         const textLayerContainer = textLayerRef.current;
         if (textLayerContainer && !cancelled) {
           textLayerContainer.replaceChildren();
@@ -317,7 +330,7 @@ export default function ReadingClient() {
   const openReading = (id: string) => {
     setSelectedId(id);
     setTab("pdf");
-    if (!window.matchMedia("(max-width: 760px)").matches) return;
+    if (!window.matchMedia("(max-width: 960px)").matches) return;
     setSpread(false);
     setFitWidth(true);
     setFocusMode(true);
@@ -493,7 +506,7 @@ export default function ReadingClient() {
               <div className="highlight-actions"><button onClick={() => setPendingHighlight(null)}>Cancelar</button><button className="save" disabled={savingHighlight} onClick={saveHighlight}>{savingHighlight ? "Salvando…" : "Destacar"}</button></div>
             </div>}
           </div>
-          <div className="page-controls"><button disabled={selected.currentPage <= 1} onClick={() => changePage(selected.currentPage - (spread ? 2 : 1))}><ChevronLeft /> Anterior</button><input aria-label="Progresso da leitura" type="range" min="1" max={selected.totalPages} value={selected.currentPage} onChange={(event) => changePage(Number(event.target.value))} /><span>Página <b>{selected.currentPage}</b> de {selected.totalPages}</span><button disabled={selected.currentPage >= selected.totalPages} onClick={() => changePage(selected.currentPage + (spread ? 2 : 1))}>Próxima <ChevronRight /></button></div>
+          <div className="page-controls"><button aria-label="Página anterior" disabled={selected.currentPage <= 1} onClick={() => changePage(selected.currentPage - (spread ? 2 : 1))}><ChevronLeft /> <span>Anterior</span></button><input aria-label="Progresso da leitura" type="range" min="1" max={selected.totalPages} value={selected.currentPage} onChange={(event) => changePage(Number(event.target.value))} /><span>Página <b>{selected.currentPage}</b> de {selected.totalPages}</span><button aria-label="Próxima página" disabled={selected.currentPage >= selected.totalPages} onClick={() => changePage(selected.currentPage + (spread ? 2 : 1))}><span>Próxima</span> <ChevronRight /></button></div>
         </section>
         <aside className="reading-session">
           <small>SESSÃO DE LEITURA</small><div className={running ? "timer running" : "timer"}>{formatTime(selected.totalSeconds)}</div><p>Tempo total registrado</p>
