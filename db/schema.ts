@@ -52,3 +52,34 @@ export const loginAttempts = sqliteTable("login_attempts", {
   blockedUntil: integer("blocked_until").notNull().default(0),
   updatedAt: integer("updated_at").notNull(),
 });
+
+export const workspacePages = sqliteTable("workspace_pages", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  area: text("area", { enum: ["memoria", "raciocinio", "conexoes"] }).notNull().default("memoria"),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  icon: text("icon").notNull().default("📝"),
+  favorite: integer("favorite", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_workspace_pages_user_area_updated").on(table.userId, table.area, table.updatedAt),
+]);
+
+export const agendaItems = sqliteTable("agenda_items", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  notes: text("notes").notNull().default(""),
+  date: text("date").notNull(),
+  startTime: text("start_time"),
+  endTime: text("end_time"),
+  kind: text("kind", { enum: ["task", "event"] }).notNull().default("task"),
+  color: text("color", { enum: ["violet", "cyan", "green", "amber", "coral"] }).notNull().default("violet"),
+  done: integer("done", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_agenda_items_user_date").on(table.userId, table.date),
+]);

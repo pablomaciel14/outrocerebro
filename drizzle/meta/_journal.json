@@ -36,6 +36,13 @@
       "when": 1786835798758,
       "tag": "0004_freezing_ben_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786880752467,
+      "tag": "0005_outgoing_shinko_yamashiro",
+      "breakpoints": true
     }
   ]
 }

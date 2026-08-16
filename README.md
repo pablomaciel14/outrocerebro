@@ -18,12 +18,21 @@ O endereço é publicamente acessível somente até a tela inicial. O conteúdo 
 
 ### Espaço de conhecimento
 
-- Apresenta as áreas Memória, Raciocínio, Conexões e Leituras.
-- Exibe notas, tarefas, backlinks e uma representação visual de grafo.
-- Oferece busca, criação rápida de nota, modo de leitura e modo foco.
+- Apresenta as áreas Memória, Raciocínio, Conexões, Agenda e Leituras.
+- Memória, Raciocínio e Conexões possuem páginas próprias, editáveis e persistentes.
+- Oferece busca, criação rápida de páginas, ícone/emoji, favoritos, visualização e modo foco.
+- O editor salva automaticamente no banco e aceita uma estrutura Markdown simples.
+- Ao digitar `/` em uma linha vazia, exibe um menu de blocos inspirado no Notion para inserir título, lista de tarefas ou citação.
 - Possui uma central de ações rápidas acessível pela barra superior.
 
-> Estado atual: a tela de notas, tarefas, Raciocínio e Conexões ainda é uma interface demonstrativa mantida no estado do navegador. Esses dados não são persistidos. A biblioteca de Leituras é a parte funcional e persistente do produto.
+### Agenda
+
+- Exibe um calendário mensal responsivo, inspirado na organização visual do Google Calendar.
+- Permite selecionar um dia e criar tarefas ou compromissos.
+- Compromissos podem ter horário inicial, horário final e uma de cinco cores.
+- Tarefas podem ser concluídas e reabertas diretamente na agenda.
+- Os próximos itens também aparecem no painel contextual das páginas.
+- Tarefas e compromissos são persistidos no D1 e associados ao usuário autenticado.
 
 ### Biblioteca de leituras
 
@@ -46,9 +55,10 @@ PDFs digitalizados sem camada de texto continuam visíveis, mas a conversão par
 | Área | Endereço | Situação |
 | --- | --- | --- |
 | Login | `/` | Funcional |
-| Memória | `/workspace` | Interface demonstrativa |
-| Raciocínio | `/workspace?area=raciocinio` | Visão contextual demonstrativa |
-| Conexões | `/workspace?area=conexoes` | Visão contextual demonstrativa |
+| Memória | `/workspace` | Editável e persistente |
+| Raciocínio | `/workspace?area=raciocinio` | Editável e persistente |
+| Conexões | `/workspace?area=conexoes` | Editável e persistente |
+| Agenda | `/workspace?area=agenda` | Calendário funcional e persistente |
 | Leituras | `/workspace/leituras` | Funcional e persistente |
 
 No celular, cada ícone do menu é um link HTML real, com área de toque ampliada. Isso evita depender de eventos de clique aplicados apenas ao desenho do ícone.
@@ -84,6 +94,8 @@ O esquema está em `db/schema.ts`.
 - `highlights`: leitura, origem PDF/Markdown, página, trecho, cor, nota e retângulos visuais.
 - `bookmarks`: leitura e página marcada; há unicidade por usuário, leitura e página.
 - `login_attempts`: contador e bloqueio temporário de tentativas de autenticação.
+- `workspace_pages`: páginas editáveis de Memória, Raciocínio e Conexões, com conteúdo, ícone e favorito.
+- `agenda_items`: tarefas e compromissos, com data, horários, cor e situação de conclusão.
 
 Todos os registros persistentes carregam `userId`, e as consultas de leitura e alteração filtram pelo usuário autenticado.
 
@@ -130,6 +142,7 @@ SUPABASE_PUBLISHABLE_KEY
 app/
   api/auth/           login e logout
   api/readings/       upload, listagem, PDF, progresso e exclusão
+  api/workspace/      páginas, tarefas e compromissos
   api/highlights/     destaques e notas
   api/bookmarks/      marcadores de página
   workspace/          painel principal
@@ -174,8 +187,8 @@ npm test
 
 **Data:** 16 de agosto de 2026.
 
-- O menu lateral deixou de usar botões desativados e passou a usar links reais para todas as áreas.
-- Memória, Raciocínio e Conexões ganharam endereços identificáveis; Leituras continua abrindo a aplicação persistente.
-- No celular, a área de toque dos ícones foi ampliada e o desenho interno não intercepta o toque.
-- Foi adicionada uma faixa contextual que confirma visualmente a área selecionada.
-- Este README substituiu a documentação genérica do starter e agora representa o funcionamento real do Outro Cérebro.
+- Memória, Raciocínio e Conexões deixaram de ser demonstrativos: agora permitem criar, pesquisar, editar, favoritar, visualizar e excluir páginas com salvamento automático no D1.
+- Foi adicionado um menu de blocos inspirado no Notion, acionado por `/`, para títulos, tarefas e citações.
+- Foi criada a área Agenda, com calendário mensal, seleção de dias, tarefas, compromissos, horários, cores e conclusão de itens.
+- A agenda foi adaptada para computador, tablet e celular; em telas estreitas os eventos usam indicadores compactos e o detalhamento do dia aparece abaixo do mês.
+- A biblioteca de Leituras e seu leitor de PDFs não foram alterados nesta entrega.
