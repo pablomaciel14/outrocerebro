@@ -2,9 +2,16 @@
 
 [← Índice](../README.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
-## 2026-08-16 — Suporte a PWA e Instalação
+## 2026-08-16 — Correção: página de login travada em janelas baixas
 
-Última atualização funcional.
+- Área afetada: página de login (`/`).
+- Corrigido: `body` usa `overflow: hidden` como padrão global, e `.login-page` repetia o mesmo `overflow: hidden`. Só existiam exceções por largura (`max-width: 760px`/`780px`, escopadas a Leituras/Workspace) reativando o scroll — nenhuma cobria a página de login nem tratava altura de janela insuficiente. Em qualquer largura acima desses limites (a maioria dos notebooks e tablets em paisagem) com altura de janela menor que o conteúdo do cartão de login, a parte inferior (botão de entrar, avisos, rodapé) ficava fora da tela e era impossível rolar até ela.
+- Comportamento novo: `.login-page` agora é seu próprio contêiner de rolagem (`max-height: 100vh; overflow-y: auto`), independente do `overflow: hidden` do `body`. O card sempre fica totalmente alcançável, em qualquer largura ou altura de janela.
+- Dados/migrações: nenhuma.
+- Validação: reproduzido o travamento simulando uma janela 1024×700 (conteúdo de 886px preso, sem rolagem possível); confirmado que a correção resolve, testado via injeção do CSS na página em produção antes de aplicar no repositório.
+- Limitações restantes: o mesmo padrão (`body { overflow: hidden }` só liberado por breakpoints de largura) provavelmente afeta Workspace e Leituras em janelas largas porém baixas; não foi corrigido nesta entrega por exigir validação autenticada nessas áreas.
+
+## 2026-08-16 — Suporte a PWA e Instalação
 
 - O sistema foi configurado como Progressive Web App (PWA).
 - Adicionado Service Worker (`sw.js`) e componente de registro para cumprir os requisitos de instalabilidade.
