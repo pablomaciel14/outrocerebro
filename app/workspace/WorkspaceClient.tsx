@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { BookOpenText, Brain, Check, ChevronDown, ChevronRight, Eye, Focus, Lightbulb, Link2, LockKeyhole, Network, PencilLine, Plus, Search, Settings2, Tags, TerminalSquare } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BookOpenText, Brain, Check, ChevronDown, ChevronRight, Eye, Focus, Lightbulb, Link2, LockKeyhole, Network, PencilLine, Plus, Search, Settings2, Tags, TerminalSquare, X } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 
 type Note = {
@@ -26,10 +26,10 @@ const initialNotes: Note[] = [
 ];
 
 const navItems = [
-  { Icon: Brain, title: "MEMÓRIA", subtitle: "Guarde o que importa." },
-  { Icon: Lightbulb, title: "RACIOCÍNIO", subtitle: "Organize suas ideias." },
-  { Icon: Network, title: "CONEXÕES", subtitle: "Descubra relações." },
-  { Icon: BookOpenText, title: "LEITURAS", subtitle: "Leia e registre." },
+  { Icon: Brain, title: "MEMÓRIA", subtitle: "Guarde o que importa.", available: true },
+  { Icon: Lightbulb, title: "RACIOCÍNIO", subtitle: "Organize suas ideias.", available: false },
+  { Icon: Network, title: "CONEXÕES", subtitle: "Descubra relações.", available: false },
+  { Icon: BookOpenText, title: "LEITURAS", subtitle: "Leia e registre.", available: true },
 ];
 
 const initialTasks = [
@@ -50,14 +50,17 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
   const [mode, setMode] = useState<"edit" | "read">("edit");
   const [tasks, setTasks] = useState(initialTasks);
   const [zen, setZen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const noteIdRef = useRef(initialNotes.length);
 
-  const addNote = () => {
-    const nextId = Math.max(...notes.map((note) => note.id)) + 1;
+  const addNote = useCallback(() => {
+    const nextId = ++noteIdRef.current;
     const next = { id: nextId, title: "Nota sem título", time: "agora", group: "HOJE" as const };
     setNotes((current) => [next, ...current]);
     setActiveNote(nextId);
-  };
+    setCommandOpen(false);
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -69,10 +72,15 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
         event.preventDefault();
         addNote();
       }
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        setCommandOpen((value) => !value);
+      }
+      if (event.key === "Escape") setCommandOpen(false);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  });
+  }, [addNote]);
 
   const filtered = notes.filter((note) => note.title.toLowerCase().includes(query.toLowerCase()));
   const selected = notes.find((note) => note.id === activeNote) ?? notes[0];
@@ -83,7 +91,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
         <div className="product-name"><Mark compact /><strong>Outro Cérebro</strong></div>
         <div className="top-actions">
           <button aria-label="Buscar" onClick={() => searchRef.current?.focus()}><Search /></button>
-          <button aria-label="Abrir comandos"><TerminalSquare /></button>
+          <button aria-label="Abrir ações rápidas" title="Ações rápidas (⌘⇧P)" onClick={() => setCommandOpen(true)}><TerminalSquare /></button>
           <ThemeToggle variant="icon" />
           <button aria-label="Alternar foco" onClick={() => setZen((value) => !value)}><Focus /></button>
           <form action="/api/auth/logout" method="post"><button className="avatar" aria-label={`Sair da conta de ${displayName}`} title={`${displayName} · ${email} · Sair`} type="submit">{displayName.charAt(0).toUpperCase()}</button></form>
@@ -100,10 +108,10 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <p>Seu espaço privado<br />para pensar.</p>
         </div>
         <nav aria-label="Áreas do conhecimento">
-          {navItems.map(({ Icon, title, subtitle }) => (
-            <button key={title} onClick={() => title === "LEITURAS" && (window.location.href = "/workspace/leituras")} className={title === "MEMÓRIA" ? "nav-item active" : "nav-item"}>
+          {navItems.map(({ Icon, title, subtitle, available }) => (
+            <button key={title} disabled={!available} title={available ? title : `${title} · em breve`} onClick={() => title === "LEITURAS" && (window.location.href = "/workspace/leituras")} className={title === "MEMÓRIA" ? "nav-item active" : "nav-item"}>
               <span className="nav-icon"><Icon /></span>
-              <span><b>{title}</b><small>{subtitle}</small></span>
+              <span><b>{title}{!available && <em>EM BREVE</em>}</b><small>{subtitle}</small></span>
             </button>
           ))}
         </nav>
@@ -134,7 +142,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           })}
           {!filtered.length && <div className="empty-search">Nenhuma nota encontrada.</div>}
         </div>
-        <button className="settings"><Settings2 /> Configurações</button>
+        <button className="settings" disabled title="Configurações em breve"><Settings2 /> Configurações <small>EM BREVE</small></button>
       </aside>
 
       <section className="editor-panel">
@@ -150,7 +158,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <h2><span>#</span> {selected.title}</h2>
           <p>O planejamento tributário é uma das frentes mais importantes para redução de riscos e aumento de eficiência fiscal de pessoas e empresas.</p>
           <h3><span>##</span> Contexto</h3>
-          <p>Com a chegada da <a>[[Reforma tributária]]</a> em 2026, novas oportunidades e desafios surgem para planejamento estratégico.</p>
+          <p>Com a chegada da <span className="wiki-link">[[Reforma tributária]]</span> em 2026, novas oportunidades e desafios surgem para planejamento estratégico.</p>
           <h3><span>##</span> Estratégias principais</h3>
           <ul className="checklist">
             <li><span>[ ]</span> Analisar cenário atual da empresa</li>
@@ -173,7 +181,7 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
 
       <aside className="context-panel">
         <section className="context-section tasks">
-          <div className="section-heading"><h2>TAREFAS</h2><button aria-label="Adicionar tarefa"><Plus /></button></div>
+          <div className="section-heading"><h2>TAREFAS</h2><button disabled title="Adição de tarefas em breve" aria-label="Adicionar tarefa em breve"><Plus /></button></div>
           {tasks.map((task, index) => (
             <button key={task.title} className={task.done ? "task done" : "task"} onClick={() => setTasks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, done: !item.done } : item))}>
               <i>{task.done ? <Check /> : null}</i><span>{task.title}</span><time>{task.date}</time>
@@ -202,6 +210,18 @@ export default function WorkspaceClient({ displayName, email }: { displayName: s
           <p className="graph-caption">Visualização do grafo de conhecimento será implementada em breve com react-force-graph.</p>
         </section>
       </aside>
+      {commandOpen && <div className="command-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setCommandOpen(false)}>
+        <section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-title">
+          <header><span><TerminalSquare /><b id="command-title">Ações rápidas</b></span><button aria-label="Fechar ações" onClick={() => setCommandOpen(false)}><X /></button></header>
+          <div>
+            <button onClick={addNote}><Plus /><span><b>Nova nota</b><small>Comece a registrar uma ideia</small></span><kbd>⌘N</kbd></button>
+            <button onClick={() => { setCommandOpen(false); window.requestAnimationFrame(() => searchRef.current?.focus()); }}><Search /><span><b>Buscar notas</b><small>Encontre algo na memória</small></span><kbd>⌘K</kbd></button>
+            <button onClick={() => { window.location.href = "/workspace/leituras"; }}><BookOpenText /><span><b>Abrir leituras</b><small>Continue seus PDFs e anotações</small></span><ChevronRight /></button>
+            <button onClick={() => { setZen((value) => !value); setCommandOpen(false); }}><Focus /><span><b>{zen ? "Sair do foco" : "Entrar em foco"}</b><small>{zen ? "Restaurar todos os painéis" : "Deixar somente a nota visível"}</small></span></button>
+          </div>
+          <footer>Atalho: <kbd>⌘⇧P</kbd></footer>
+        </section>
+      </div>}
     </main>
   );
 }

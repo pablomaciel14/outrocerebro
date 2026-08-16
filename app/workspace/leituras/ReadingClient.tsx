@@ -96,6 +96,7 @@ function PdfCanvas({ reading, page, highlights, scale, fitWidth, onLoaded }: { r
   const textLayerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef(onLoaded);
   const [error, setError] = useState("");
+  const [rendering, setRendering] = useState(true);
   const [availableWidth, setAvailableWidth] = useState(0);
 
   useEffect(() => { onLoadedRef.current = onLoaded; }, [onLoaded]);
@@ -116,6 +117,7 @@ function PdfCanvas({ reading, page, highlights, scale, fitWidth, onLoaded }: { r
     (async () => {
       try {
         setError("");
+        setRendering(true);
         const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
         const loadingTask = pdfjs.getDocument({
@@ -165,8 +167,9 @@ function PdfCanvas({ reading, page, highlights, scale, fitWidth, onLoaded }: { r
             if (hit) span.classList.add("pdf-highlight", `highlight-${hit.color}`);
           });
         }
+        if (!cancelled) setRendering(false);
       } catch (reason) {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : "Falha ao renderizar PDF.");
+        if (!cancelled) { setRendering(false); setError(reason instanceof Error ? reason.message : "Falha ao renderizar PDF."); }
       }
     })();
     return () => { cancelled = true; task?.destroy().catch(() => undefined); };
@@ -175,10 +178,11 @@ function PdfCanvas({ reading, page, highlights, scale, fitWidth, onLoaded }: { r
   if (error) return <div className="reader-error">{error}</div>;
   const pageRects = highlights.filter((highlight) => highlight.source === "pdf" && highlight.page === page)
     .flatMap((highlight) => parseHighlightRects(highlight.rects).map((rect, index) => ({ ...rect, color: highlight.color, key: `${highlight.id}-${index}` })));
-  return <div ref={pageWrapRef} className={`pdf-page-wrap${fitWidth ? " fit-width" : ""}`} data-highlight-source="pdf" data-highlight-page={page}>
+  return <div ref={pageWrapRef} className={`pdf-page-wrap${fitWidth ? " fit-width" : ""}`} data-highlight-source="pdf" data-highlight-page={page} aria-busy={rendering}>
     <canvas ref={canvasRef} className="pdf-canvas" aria-label={`Página ${page} de ${reading.title}`} />
     <div className="pdf-highlight-overlays" aria-hidden="true">{pageRects.map((rect) => <i key={rect.key} className={`pdf-highlight-rect highlight-${rect.color}`} style={{ left: `${rect.x * 100}%`, top: `${rect.y * 100}%`, width: `${rect.width * 100}%`, height: `${rect.height * 100}%` }} />)}</div>
     <div ref={textLayerRef} className="textLayer pdf-text-layer" />
+    {rendering && <div className="pdf-loading" role="status"><Timer className="spin-icon" /><span>Preparando página {page}</span></div>}
   </div>;
 }
 
