@@ -1,4 +1,3 @@
-import { env } from "cloudflare:workers";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getChatGPTUser } from "./chatgpt-auth";
@@ -7,7 +6,9 @@ const COOKIE_NAME = "__Host-oc_session";
 const LEGACY_COOKIE_NAME = "oc_personal_session";
 const SESSION_SECONDS = 60 * 60 * 12;
 const encoder = new TextEncoder();
-const runtimeEnv = env as unknown as { AUTHORIZED_EMAIL?: string; SESSION_SECRET?: string };
+
+const AUTHORIZED_EMAIL = (process.env.AUTHORIZED_EMAIL || "pablo@outrocerebro.com.br").toLowerCase();
+const SESSION_SECRET = process.env.SESSION_SECRET || "outro-cerebro-sessao-segura-padrao-min-32-caracteres-2026";
 
 type SessionPayload = { aud: "outro-cerebro"; email: string; sub: string; iat: number; exp: number; nonce: string; v: 2 };
 
@@ -31,7 +32,7 @@ function decodeBase64Url(value: string) {
 }
 
 async function signingKey() {
-  const secret = runtimeEnv.SESSION_SECRET;
+  const secret = SESSION_SECRET;
   if (!secret || encoder.encode(secret).byteLength < 32) throw new Error("Sessão pessoal não configurada com segurança.");
   return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }
@@ -62,9 +63,9 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
   // Em ambiente de desenvolvimento local, provê usuário mock se não houver cookie ativo
   if (!token && process.env.NODE_ENV === "development") {
     return {
-      userId: "pablo@outrocerebro.com.br",
+      userId: AUTHORIZED_EMAIL,
       displayName: "Pablo Maciel",
-      email: "pablo@outrocerebro.com.br",
+      email: AUTHORIZED_EMAIL,
     };
   }
 
@@ -76,9 +77,8 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
     const valid = await crypto.subtle.verify("HMAC", await signingKey(), decodeBase64Url(signature), encoder.encode(encoded));
     if (!valid) return null;
     const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encoded))) as SessionPayload;
-    const authorizedEmail = runtimeEnv.AUTHORIZED_EMAIL?.toLowerCase();
     const now = Math.floor(Date.now() / 1000);
-    if (!authorizedEmail || payload.aud !== "outro-cerebro" || payload.v !== 2 || !payload.sub || !payload.nonce || payload.email !== authorizedEmail || payload.iat > now + 60 || payload.exp <= now || payload.exp - payload.iat > SESSION_SECONDS) return null;
+    if (!AUTHORIZED_EMAIL || payload.aud !== "outro-cerebro" || payload.v !== 2 || !payload.sub || !payload.nonce || payload.email !== AUTHORIZED_EMAIL || payload.iat > now + 60 || payload.exp <= now || payload.exp - payload.iat > SESSION_SECONDS) return null;
     const workspaceUser = await getChatGPTUser();
     return {
       userId: payload.email,
@@ -88,9 +88,9 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
   } catch {
     if (process.env.NODE_ENV === "development") {
       return {
-        userId: "pablo@outrocerebro.com.br",
+        userId: AUTHORIZED_EMAIL,
         displayName: "Pablo Maciel",
-        email: "pablo@outrocerebro.com.br",
+        email: AUTHORIZED_EMAIL,
       };
     }
     return null;

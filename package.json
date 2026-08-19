@@ -6,10 +6,10 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
-    "build": "vinext build",
-    "start": "vinext start",
-    "test": "npm run build && node --test",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node --test",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "prepare": "git config core.hooksPath .githooks"
@@ -19,6 +19,7 @@
     "@supabase/supabase-js": "^2.112.3",
     "drizzle-orm": "0.45.2",
     "lucide-react": "^1.31.0",
+    "next": "^16.3.1",
     "pdfjs-dist": "6.2.108",
     "react": "19.2.8",
     "react-dom": "19.2.8"
