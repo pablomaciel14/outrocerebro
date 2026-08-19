@@ -2,6 +2,20 @@
 
 [← Índice](../README.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
+## 2026-08-19 — Categorização Mental na Sidebar, Breadcrumbs Cognitivos e Pauta de Tarefas
+
+- Área afetada: `components/Sidebar.tsx`, `components/Header.tsx`, `app/dashboard/layout.tsx`, `app/dashboard/tarefas/page.tsx`.
+- Corrigido/adicionado:
+  - **Categorização Mental na Sidebar**: Agrupamento por estado de foco:
+    - 🧠 *MEU FOCO (O Agora)*: Visão Geral (`/dashboard`), Pauta de Tarefas (`/dashboard/tarefas`), Prazos Fatais (`/dashboard/prazos`).
+    - 📂 *MEU ACERVO (A Base)*: Processos (`/dashboard/processos`), Documentos (`/dashboard/documentos`).
+    - 🏢 *O ESCRITÓRIO (Gestão)*: Equipe & Clientes (`/dashboard/equipe`), Honorários (`/dashboard/financeiro`).
+    - ⚙️ *SISTEMA (Sala de Máquinas)*: Sincronização (`/dashboard/sincronizacao`), Configurações (`/dashboard/configuracoes`).
+  - **Efeito Marcador de Página**: Destaque sutil com borda lateral azul (`border-l-4 border-[#2563EB]`) e fundo suave (`#EFF6FF`).
+  - **Trilha Cognitiva (Breadcrumbs) no Topo**: Header dinâmico exibindo a hierarquia mental (`Outro Cérebro / Meu Acervo / Processos`).
+  - **Nova Rota de Tarefas (`/dashboard/tarefas`)**: Pauta interativa com semáforos de urgência e atalho de sincronização.
+- Validação: `npm run build` gerando todas as 13 rotas do Next.js sem erros; 37/37 testes aprovados.
+
 ## 2026-08-19 — Plataforma SaaS Jurídica, Central de Sincronização, Reconciliação Multia-abas & Gráficos Analíticos
 
 - Área afetada: `app/dashboard/*`, `components/*`, `lib/*`, `data/*`, `package.json`, `vercel.json`.
