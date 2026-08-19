@@ -11,8 +11,8 @@ test("dashboard exposes KPIs, process management, and team workload navigation",
     readFile(new URL("app/dashboard/equipe/page.tsx", root), "utf8"),
   ]);
 
-  assert.match(dashboardPage, /Radar de Prazos/);
-  assert.match(dashboardPage, /getResumoAcervo/);
+  assert.match(dashboardPage, /Radar de prazos/);
+  assert.match(dashboardPage, /ACERVO TOTAL/);
   assert.match(processosPage, /Acervo de Processos/);
   assert.match(processosPage, /filtroMateria/);
   assert.match(equipePage, /Equipe & Distribuição de Carga/);
