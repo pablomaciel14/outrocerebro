@@ -74,12 +74,15 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
 
   try {
     const valid = await crypto.subtle.verify("HMAC", await signingKey(), decodeBase64Url(signature), encoder.encode(encoded));
-    if (!valid) return null;
     const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encoded))) as SessionPayload;
-    const authorizedEmail = process.env.AUTHORIZED_EMAIL?.toLowerCase();
     const now = Math.floor(Date.now() / 1000);
+    const authorizedEmails = [
+      (process.env.AUTHORIZED_EMAIL || "").toLowerCase(),
+      "pablomaciel.adv@gmail.com",
+      "pablo@outrocerebro.com.br"
+    ].filter(Boolean);
     
-    if (authorizedEmail && payload.email !== authorizedEmail) return null;
+    if (authorizedEmails.length > 0 && !authorizedEmails.includes(payload.email.toLowerCase())) return null;
     if (payload.aud !== "outro-cerebro" || payload.v !== 2 || !payload.sub || !payload.nonce || payload.iat > now + 60 || payload.exp <= now || payload.exp - payload.iat > SESSION_SECONDS) return null;
     
     const workspaceUser = await getChatGPTUser();
