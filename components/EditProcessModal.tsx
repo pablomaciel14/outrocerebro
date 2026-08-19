@@ -7,18 +7,29 @@ import { X, Save, Loader2, Edit3 } from "lucide-react";
 
 interface EditModalProps {
   processoId: string;
-  statusAtual: string;
-  valorAtual: number;
+  currentStatus?: string;
+  currentValue?: number;
+  statusAtual?: string;
+  valorAtual?: number;
 }
 
-export function EditProcessModal({ processoId, statusAtual, valorAtual }: EditModalProps) {
+export function EditProcessModal({ 
+  processoId, 
+  currentStatus, 
+  currentValue,
+  statusAtual = "Em andamento", 
+  valorAtual = 0 
+}: EditModalProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const [status, setStatus] = useState(statusAtual);
-  const [valor, setValor] = useState(valorAtual);
+  const initialStatus = currentStatus || statusAtual;
+  const initialValue = currentValue !== undefined ? currentValue : valorAtual;
+
+  const [status, setStatus] = useState(initialStatus);
+  const [valor, setValor] = useState(initialValue);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +46,7 @@ export function EditProcessModal({ processoId, statusAtual, valorAtual }: EditMo
             status_resultado: status,
             valor_causa: Number(valor),
           })
-          .eq("id", processoId);
+          .eq("numero_processo", processoId);
 
         if (error) {
           throw new Error(error.message);
@@ -150,3 +161,5 @@ export function EditProcessModal({ processoId, statusAtual, valorAtual }: EditMo
     </>
   );
 }
+
+export default EditProcessModal;

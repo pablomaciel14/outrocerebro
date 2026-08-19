@@ -1,0 +1,338 @@
+{
+ "fonte": "Auditoria de cadastro de Processos.xlsx",
+ "importadoEm": "2026-08-19T13:31:16.285Z",
+ "total": 3883,
+ "ativos": 3880,
+ "valorTotal": 913696514,
+ "valoresDescartados": 14,
+ "porResponsavel": [
+  {
+   "nome": "Pablo Ramon da Silva Maciel",
+   "total": 1757,
+   "ativos": 1755,
+   "valor": 144711387
+  },
+  {
+   "nome": "Thiago Pires de Melo",
+   "total": 963,
+   "ativos": 963,
+   "valor": 697425875
+  },
+  {
+   "nome": "Lucas Pires de Melo",
+   "total": 415,
+   "ativos": 415,
+   "valor": 13206413
+  },
+  {
+   "nome": "João Vitor Rodrigues Lima",
+   "total": 367,
+   "ativos": 367,
+   "valor": 32987389
+  },
+  {
+   "nome": "Wagner Vinícius de Andrade Silva",
+   "total": 135,
+   "ativos": 134,
+   "valor": 10559024
+  },
+  {
+   "nome": "Janderson André Cabral Pereira",
+   "total": 77,
+   "ativos": 77,
+   "valor": 4910529
+  },
+  {
+   "nome": "Régis Lews Franco de Araújo",
+   "total": 69,
+   "ativos": 69,
+   "valor": 1996919
+  },
+  {
+   "nome": "Haylla Wanessa Barros de Oliveira",
+   "total": 33,
+   "ativos": 33,
+   "valor": 7054707
+  },
+  {
+   "nome": "Carlos Leandro Sobrinho Dias",
+   "total": 25,
+   "ativos": 25,
+   "valor": 414057
+  },
+  {
+   "nome": "José Maria Barros Brandão Júnior",
+   "total": 23,
+   "ativos": 23,
+   "valor": 249511
+  },
+  {
+   "nome": "Fernando Roberto Magalhães Albuquerque",
+   "total": 19,
+   "ativos": 19,
+   "valor": 180703
+  }
+ ],
+ "porMateria": [
+  {
+   "nome": "Cível",
+   "total": 3518,
+   "ativos": 3515,
+   "valor": 881649528
+  },
+  {
+   "nome": "Eleitoral",
+   "total": 153,
+   "ativos": 153,
+   "valor": 10000
+  },
+  {
+   "nome": "Trabalhista",
+   "total": 73,
+   "ativos": 73,
+   "valor": 7718055
+  },
+  {
+   "nome": "Criminal",
+   "total": 39,
+   "ativos": 39,
+   "valor": 0
+  },
+  {
+   "nome": "Família e Sucessões",
+   "total": 29,
+   "ativos": 29,
+   "valor": 10540784
+  },
+  {
+   "nome": "Administrativo",
+   "total": 24,
+   "ativos": 24,
+   "valor": 52800
+  },
+  {
+   "nome": "Fazenda",
+   "total": 14,
+   "ativos": 14,
+   "valor": 10612537
+  },
+  {
+   "nome": "Constitucional",
+   "total": 10,
+   "ativos": 10,
+   "valor": 1979783
+  },
+  {
+   "nome": "Não informada",
+   "total": 9,
+   "ativos": 9,
+   "valor": 99193
+  },
+  {
+   "nome": "Tributário",
+   "total": 9,
+   "ativos": 9,
+   "valor": 1033833
+  },
+  {
+   "nome": "Relatório Jurídico",
+   "total": 2,
+   "ativos": 2,
+   "valor": 0
+  },
+  {
+   "nome": "Ambiental",
+   "total": 1,
+   "ativos": 1,
+   "valor": 0
+  },
+  {
+   "nome": "Processo Administrativo",
+   "total": 1,
+   "ativos": 1,
+   "valor": 0
+  },
+  {
+   "nome": "Bancário",
+   "total": 1,
+   "ativos": 1,
+   "valor": 0
+  }
+ ],
+ "porGrupo": [
+  {
+   "nome": "Particulares",
+   "total": 2130,
+   "ativos": 2129,
+   "valor": 441076110
+  },
+  {
+   "nome": "Âmbar Energia",
+   "total": 753,
+   "ativos": 753,
+   "valor": 260369437
+  },
+  {
+   "nome": "Não informado",
+   "total": 707,
+   "ativos": 705,
+   "valor": 197310381
+  },
+  {
+   "nome": "Clientes Fixos",
+   "total": 153,
+   "ativos": 153,
+   "valor": 14840568
+  },
+  {
+   "nome": "Eleitoral",
+   "total": 134,
+   "ativos": 134,
+   "valor": 10000
+  },
+  {
+   "nome": "Trabalhista",
+   "total": 6,
+   "ativos": 6,
+   "valor": 90017
+  }
+ ],
+ "porStatus": [
+  {
+   "nome": "Em andamento",
+   "total": 3880,
+   "ativos": 3880,
+   "valor": 913671893
+  },
+  {
+   "nome": "Sentença favorável",
+   "total": 3,
+   "ativos": 0,
+   "valor": 24621
+  }
+ ],
+ "porJuizo": [
+  {
+   "nome": "Boa Vista/RR",
+   "total": 3158,
+   "ativos": 3155,
+   "valor": 759220444
+  },
+  {
+   "nome": "—",
+   "total": 265,
+   "ativos": 265,
+   "valor": 47001430
+  },
+  {
+   "nome": "Bonfim/RR",
+   "total": 143,
+   "ativos": 143,
+   "valor": 21111277
+  },
+  {
+   "nome": "Brasília/DF",
+   "total": 93,
+   "ativos": 93,
+   "valor": 50060292
+  },
+  {
+   "nome": "Mucajaí/RR",
+   "total": 35,
+   "ativos": 35,
+   "valor": 2513715
+  },
+  {
+   "nome": "São Luiz do Anauá/RR",
+   "total": 26,
+   "ativos": 26,
+   "valor": 6267906
+  },
+  {
+   "nome": "Pacaraima/RR",
+   "total": 24,
+   "ativos": 24,
+   "valor": 9105658
+  },
+  {
+   "nome": "Alto Alegre/RR",
+   "total": 23,
+   "ativos": 23,
+   "valor": 3721339
+  },
+  {
+   "nome": "Rorainópolis/RR",
+   "total": 22,
+   "ativos": 22,
+   "valor": 5411182
+  },
+  {
+   "nome": "Manaus/AM",
+   "total": 19,
+   "ativos": 19,
+   "valor": 2808660
+  },
+  {
+   "nome": "Caracaraí/RR",
+   "total": 12,
+   "ativos": 12,
+   "valor": 858633
+  },
+  {
+   "nome": "São Paulo/SP",
+   "total": 9,
+   "ativos": 9,
+   "valor": 2121777
+  }
+ ],
+ "entradasPorMes": [
+  {
+   "mes": "2025-09",
+   "total": 31
+  },
+  {
+   "mes": "2025-10",
+   "total": 37
+  },
+  {
+   "mes": "2025-11",
+   "total": 31
+  },
+  {
+   "mes": "2025-12",
+   "total": 51
+  },
+  {
+   "mes": "2026-01",
+   "total": 27
+  },
+  {
+   "mes": "2026-02",
+   "total": 64
+  },
+  {
+   "mes": "2026-03",
+   "total": 30
+  },
+  {
+   "mes": "2026-04",
+   "total": 30
+  },
+  {
+   "mes": "2026-05",
+   "total": 57
+  },
+  {
+   "mes": "2026-06",
+   "total": 41
+  },
+  {
+   "mes": "2026-07",
+   "total": 66
+  },
+  {
+   "mes": "2026-08",
+   "total": 29
+  }
+ ]
+}

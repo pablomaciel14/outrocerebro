@@ -1,362 +1,248 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { getSupabaseClient } from "@/lib/supabase";
+import React, { useState, useMemo } from "react";
+import Link from "next/link";
+import processosData from "@/data/processos.json";
 import { 
   Search, 
   Filter, 
-  FileSearch, 
-  Scale, 
   ChevronLeft, 
   ChevronRight, 
-  RefreshCw, 
-  AlertCircle,
-  Plus
+  ArrowUpRight,
+  Download,
+  FolderOpen
 } from "lucide-react";
 
-interface Processo {
-  id: string;
-  numero_processo: string;
-  autor: string;
-  reu: string;
-  materia: string;
-  status_resultado: string;
-  responsavel: string;
-  valor_causa: number;
-}
-
-const PROCESSOS_AUDITORIA: Processo[] = [
-  {
-    id: "1",
-    numero_processo: "0014285-42.2023.8.19.0001",
-    autor: "Âmbar Energia S.A.",
-    reu: "Concessionária Enel Distribuição Rio",
-    materia: "Cível",
-    status_resultado: "Em andamento",
-    responsavel: "Pablo Maciel",
-    valor_causa: 450000.0,
-  },
-  {
-    id: "2",
-    numero_processo: "0803192-11.2022.8.19.0002",
-    autor: "Particular / Consumidor",
-    reu: "Banco Santander Brasil S.A.",
-    materia: "Cível",
-    status_resultado: "Sentença favorável",
-    responsavel: "Thiago Pires",
-    valor_causa: 32000.0,
-  },
-  {
-    id: "3",
-    numero_processo: "5002144-88.2024.4.02.5101",
-    autor: "Particular / Tributário",
-    reu: "União Federal - Fazenda Nacional",
-    materia: "Administrativo",
-    status_resultado: "Em andamento",
-    responsavel: "Lucas Pires",
-    valor_causa: 125000.0,
-  },
-  {
-    id: "4",
-    numero_processo: "0100452-78.2021.5.01.0014",
-    autor: "Ex-colaborador",
-    reu: "Sociedade Empresária de Energia",
-    materia: "Trabalhista",
-    status_resultado: "Sentença favorável",
-    responsavel: "João Vitor",
-    valor_causa: 78500.0,
-  },
-  {
-    id: "5",
-    numero_processo: "0600124-90.2024.6.19.0000",
-    autor: "Coligação Partidária",
-    reu: "Candidato Opositor",
-    materia: "Eleitoral",
-    status_resultado: "Em andamento",
-    responsavel: "Pablo Maciel",
-    valor_causa: 0.0,
-  },
-  {
-    id: "6",
-    numero_processo: "0029841-15.2023.8.19.0001",
-    autor: "Âmbar Energia S.A.",
-    reu: "Município do Rio de Janeiro",
-    materia: "Cível",
-    status_resultado: "Em andamento",
-    responsavel: "Pablo Maciel",
-    valor_causa: 890000.0,
-  },
-];
-
 export default function ProcessosPage() {
-  const router = useRouter();
-  const [processos, setProcessos] = useState<Processo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isLive, setIsLive] = useState(false);
-
   const [busca, setBusca] = useState("");
   const [filtroMateria, setFiltroMateria] = useState("Todas");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
-
-  const [paginaAtual, setPaginaAtual] = useState(1);
-  const [totalRegistros, setTotalRegistros] = useState(0);
+  const [filtroResponsavel, setFiltroResponsavel] = useState("Todos");
+  const [pagina, setPagina] = useState(1);
   const itensPorPagina = 50;
 
-  useEffect(() => {
-    setPaginaAtual(1);
-  }, [busca, filtroMateria, filtroStatus]);
-
-  const carregarProcessos = useCallback(async () => {
-    setLoading(true);
-    const client = getSupabaseClient();
-    const from = (paginaAtual - 1) * itensPorPagina;
-    const to = from + itensPorPagina - 1;
-
-    if (client) {
-      try {
-        let query = client
-          .from("processos")
-          .select("id, numero_processo, autor, reu, materia, status_resultado, responsavel, valor_causa", {
-            count: "exact",
-          })
-          .order("data_entrada", { ascending: false })
-          .range(from, to);
-
-        if (busca.trim()) {
-          query = query.or(`numero_processo.ilike.%${busca.trim()}%,autor.ilike.%${busca.trim()}%`);
-        }
-
-        if (filtroMateria !== "Todas") {
-          query = query.eq("materia", filtroMateria);
-        }
-
-        if (filtroStatus !== "Todos") {
-          query = query.eq("status_resultado", filtroStatus);
-        }
-
-        const { data, count, error } = await query;
-
-        if (!error && data && data.length > 0) {
-          setProcessos(data as Processo[]);
-          if (typeof count === "number") setTotalRegistros(count);
-          setIsLive(true);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // Fallback local
-      }
-    }
-
-    let filtrados = [...PROCESSOS_AUDITORIA];
+  // Filtragem ultra-rápida no cliente com useMemo sobre os 3.883 processos
+  const processosFiltrados = useMemo(() => {
+    let list = processosData;
 
     if (busca.trim()) {
-      const termo = busca.toLowerCase();
-      filtrados = filtrados.filter(
+      const q = busca.toLowerCase().trim();
+      list = list.filter(
         (p) =>
-          p.numero_processo.toLowerCase().includes(termo) ||
-          p.autor.toLowerCase().includes(termo) ||
-          p.reu.toLowerCase().includes(termo)
+          p.n.toLowerCase().includes(q) ||
+          p.aut.toLowerCase().includes(q) ||
+          p.reu.toLowerCase().includes(q) ||
+          p.res.toLowerCase().includes(q) ||
+          p.adv.toLowerCase().includes(q) ||
+          p.jui.toLowerCase().includes(q)
       );
     }
 
     if (filtroMateria !== "Todas") {
-      filtrados = filtrados.filter((p) => p.materia.toLowerCase() === filtroMateria.toLowerCase());
+      list = list.filter((p) => p.mat.toLowerCase() === filtroMateria.toLowerCase());
     }
 
     if (filtroStatus !== "Todos") {
-      filtrados = filtrados.filter((p) => p.status_resultado.toLowerCase() === filtroStatus.toLowerCase());
+      list = list.filter((p) => p.sta.toLowerCase() === filtroStatus.toLowerCase());
     }
 
-    setTotalRegistros(filtrados.length);
-    const paginados = filtrados.slice(from, to + 1);
-    setProcessos(paginados);
-    setIsLive(false);
-    setLoading(false);
-  }, [busca, filtroMateria, filtroStatus, paginaAtual]);
+    if (filtroResponsavel !== "Todos") {
+      list = list.filter((p) => p.res.toLowerCase().includes(filtroResponsavel.toLowerCase()));
+    }
 
-  useEffect(() => {
-    carregarProcessos();
-  }, [carregarProcessos]);
+    return list;
+  }, [busca, filtroMateria, filtroStatus, filtroResponsavel]);
 
-  const totalPaginas = Math.ceil(totalRegistros / itensPorPagina);
-  const inicioRegistro = totalRegistros > 0 ? (paginaAtual - 1) * itensPorPagina + 1 : 0;
-  const fimRegistro = Math.min(paginaAtual * itensPorPagina, totalRegistros);
+  const total = processosFiltrados.length;
+  const totalPaginas = Math.ceil(total / itensPorPagina) || 1;
+  const inicio = (pagina - 1) * itensPorPagina;
+  const itensExibidos = processosFiltrados.slice(inicio, inicio + itensPorPagina);
+
+  const formatarMoeda = (val: number) => {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+  };
+
+  const handleBuscaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusca(e.target.value);
+    setPagina(1);
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#1F2937] tracking-tight flex items-center gap-3">
-            <Scale className="text-[#2563EB] w-8 h-8" />
-            Acervo de Processos
-          </h1>
-          <p className="text-sm text-[#6B7280] mt-1">
-            Gerencie e filtre as demandas judiciais e extrajudiciais do escritório.
+          <h1 className="text-xl font-bold text-[#131822] tracking-tight">Acervo de Processos</h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Total de <span className="font-bold text-[#131822]">{processosData.length.toLocaleString("pt-BR")}</span> ações cadastradas na base
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => carregarProcessos()}
-            className="p-2.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] text-[#4B5563] hover:text-[#1F2937] hover:bg-[#F9FAFB] transition-colors shadow-2xs"
-            title="Atualizar dados"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-          <button className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm">
-            <Plus className="w-4 h-4" />
-            Novo Processo
-          </button>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono bg-[#FFFFFF] border border-[#E7E8EC] px-3 py-1.5 rounded-lg text-[#6B7280]">
+            Exibindo {itensExibidos.length} de {total.toLocaleString("pt-BR")} filtrados
+          </span>
         </div>
       </div>
 
-      {/* Barra de Filtros e Busca */}
-      <div className="bg-[#FFFFFF] border border-[#E5E7EB] p-4 rounded-2xl flex flex-col md:flex-row gap-4 shadow-xs">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Buscar por número do processo ou autor..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl text-sm text-[#1F2937] placeholder-[#9CA3AF] focus:outline-none focus:border-[#2563EB] focus:bg-[#FFFFFF] transition-all"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex items-center">
-            <Filter className="absolute left-3 text-[#9CA3AF] w-3.5 h-3.5 pointer-events-none" />
-            <select
-              value={filtroMateria}
-              onChange={(e) => setFiltroMateria(e.target.value)}
-              className="pl-8 pr-8 py-2.5 bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#1F2937] focus:outline-none focus:border-[#2563EB] cursor-pointer font-medium"
-            >
-              <option value="Todas">Todas as Matérias</option>
-              <option value="Cível">Cível</option>
-              <option value="Eleitoral">Eleitoral</option>
-              <option value="Trabalhista">Trabalhista</option>
-              <option value="Administrativo">Administrativo</option>
-            </select>
+      {/* Barra de Filtros & Busca */}
+      <div className="bg-[#FFFFFF] border border-[#E7E8EC] rounded-xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          {/* Campo de Busca */}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
+            <input
+              type="text"
+              placeholder="Buscar por número CNJ, autor, réu, advogado ou comarca..."
+              value={busca}
+              onChange={handleBuscaChange}
+              className="w-full pl-9 pr-4 py-2 bg-[#FAFAF9] border border-[#E7E8EC] rounded-lg text-xs text-[#131822] focus:outline-none focus:border-[#2563EB] transition-colors"
+            />
           </div>
 
+          {/* Select de Matéria */}
+          <select
+            value={filtroMateria}
+            onChange={(e) => { setFiltroMateria(e.target.value); setPagina(1); }}
+            className="w-full md:w-44 px-3 py-2 bg-[#FAFAF9] border border-[#E7E8EC] rounded-lg text-xs text-[#131822] focus:outline-none focus:border-[#2563EB]"
+          >
+            <option value="Todas">Todas as matérias</option>
+            <option value="Cível">Cível (3.518)</option>
+            <option value="Eleitoral">Eleitoral (153)</option>
+            <option value="Trabalhista">Trabalhista (73)</option>
+            <option value="Criminal">Criminal (39)</option>
+            <option value="Família e Sucessões">Família e Sucessões (29)</option>
+            <option value="Administrativo">Administrativo (24)</option>
+          </select>
+
+          {/* Select de Responsável */}
+          <select
+            value={filtroResponsavel}
+            onChange={(e) => { setFiltroResponsavel(e.target.value); setPagina(1); }}
+            className="w-full md:w-52 px-3 py-2 bg-[#FAFAF9] border border-[#E7E8EC] rounded-lg text-xs text-[#131822] focus:outline-none focus:border-[#2563EB]"
+          >
+            <option value="Todos">Todos os responsáveis</option>
+            <option value="Pablo Ramon">Pablo Ramon (1.757)</option>
+            <option value="Thiago Pires">Thiago Pires (963)</option>
+            <option value="Lucas Pires">Lucas Pires (415)</option>
+            <option value="João Vitor">João Vitor (367)</option>
+            <option value="Wagner Vinícius">Wagner Vinícius (135)</option>
+            <option value="Janderson André">Janderson André (77)</option>
+            <option value="Régis Lews">Régis Lews (69)</option>
+          </select>
+
+          {/* Select de Status */}
           <select
             value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value)}
-            className="px-4 py-2.5 bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#1F2937] focus:outline-none focus:border-[#2563EB] cursor-pointer font-medium"
+            onChange={(e) => { setFiltroStatus(e.target.value); setPagina(1); }}
+            className="w-full md:w-40 px-3 py-2 bg-[#FAFAF9] border border-[#E7E8EC] rounded-lg text-xs text-[#131822] focus:outline-none focus:border-[#2563EB]"
           >
-            <option value="Todos">Todos os Status</option>
+            <option value="Todos">Todos os status</option>
             <option value="Em andamento">Em andamento</option>
             <option value="Sentença favorável">Sentença favorável</option>
           </select>
         </div>
       </div>
 
-      {/* Tabela de Dados */}
-      <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-xs flex flex-col">
+      {/* Tabela de Processos */}
+      <div className="bg-[#FFFFFF] border border-[#E7E8EC] rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-[#1F2937] text-[#E5E7EB] text-xs uppercase tracking-wider">
-                <th className="px-6 py-4 font-semibold whitespace-nowrap">Número do Processo</th>
-                <th className="px-6 py-4 font-semibold">Partes</th>
-                <th className="px-6 py-4 font-semibold">Responsável</th>
-                <th className="px-6 py-4 font-semibold">Matéria</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
+              <tr className="bg-[#F9FAFB] border-b border-[#E7E8EC] text-[#6B7280] font-semibold">
+                <th className="py-3 px-4">Número do Processo</th>
+                <th className="py-3 px-4">Autor / Polo Ativo</th>
+                <th className="py-3 px-4">Réu / Polo Passivo</th>
+                <th className="py-3 px-4">Matéria / Comarca</th>
+                <th className="py-3 px-4">Responsável</th>
+                <th className="py-3 px-4">Valor da Causa</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E5E7EB] text-sm">
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-[#6B7280]">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <FileSearch className="animate-pulse text-[#2563EB] w-8 h-8" />
-                      <span className="text-sm font-medium">Carregando processos...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : processos.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-[#6B7280] font-medium">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <AlertCircle className="w-6 h-6 text-[#9CA3AF]" />
-                      <span>Nenhum processo encontrado com estes filtros.</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                processos.map((proc) => (
-                  <tr 
-                    key={proc.id} 
-                    onClick={() => router.push(`/dashboard/processos/${proc.id}`)}
-                    className="hover:bg-[#F9FAFB] transition-colors group cursor-pointer"
-                  >
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-sm text-[#1F2937] group-hover:text-[#2563EB] transition-colors">
-                        {proc.numero_processo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-[#1F2937] truncate max-w-xs">
-                        {proc.autor || "—"}
-                      </div>
-                      <div className="text-xs text-[#6B7280] truncate max-w-xs mt-0.5">
-                        {proc.reu ? `x ${proc.reu}` : "—"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium text-[#4B5563]">{proc.responsavel || "—"}</td>
-                    <td className="px-6 py-4 text-xs text-[#6B7280]">{proc.materia || "Cível"}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
-                          proc.status_resultado?.toLowerCase().includes("favorável")
-                            ? "bg-[#DCFCE7] text-[#166534]"
-                            : proc.status_resultado?.toLowerCase().includes("andamento")
-                            ? "bg-[#DBEAFE] text-[#1E40AF]"
-                            : "bg-[#FEF9C3] text-[#854D0E]"
-                        }`}
+            <tbody className="divide-y divide-[#F4F5F7]">
+              {itensExibidos.length > 0 ? (
+                itensExibidos.map((proc) => (
+                  <tr key={proc.n} className="hover:bg-[#FAFAF9] transition-colors group">
+                    <td className="py-3 px-4 font-mono font-bold text-[#131822]">
+                      <Link
+                        href={`/dashboard/processos/${encodeURIComponent(proc.n)}`}
+                        className="hover:text-[#2563EB] hover:underline"
                       >
-                        {proc.status_resultado || "Em andamento"}
+                        {proc.n}
+                      </Link>
+                    </td>
+                    <td className="py-3 px-4 font-medium text-[#374151] max-w-[160px] truncate" title={proc.aut}>
+                      {proc.aut || "—"}
+                    </td>
+                    <td className="py-3 px-4 text-[#6B7280] max-w-[160px] truncate" title={proc.reu}>
+                      {proc.reu || "—"}
+                    </td>
+                    <td className="py-3 px-4 text-[#6B7280]">
+                      <span className="font-semibold text-[#374151]">{proc.mat}</span>
+                      <span className="text-[#9CA3AF] block text-[11px]">{proc.jui || "Boa Vista/RR"}</span>
+                    </td>
+                    <td className="py-3 px-4 text-[#6B7280]">
+                      {proc.res}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[#374151]">
+                      {proc.val ? formatarMoeda(proc.val) : "—"}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        proc.sta === "Em andamento" 
+                          ? "bg-[#DBEAFE] text-[#1E40AF]" 
+                          : "bg-[#DCFCE7] text-[#166534]"
+                      }`}>
+                        {proc.sta}
                       </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <Link
+                        href={`/dashboard/processos/${encodeURIComponent(proc.n)}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#FFFFFF] border border-[#E7E8EC] hover:bg-[#F4F5F7] text-[#2563EB] rounded text-xs font-semibold transition-colors"
+                      >
+                        <span>Abrir</span>
+                        <ArrowUpRight size={13} />
+                      </Link>
                     </td>
                   </tr>
                 ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-[#9CA3AF]">
+                    Nenhum processo localizado para os filtros informados.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Rodapé com Paginação Server-Side */}
-        <div className="bg-[#FAFAFA] border-t border-[#E5E7EB] p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-xs text-[#6B7280] font-medium">
-            Mostrando <span className="font-bold text-[#1F2937]">{inicioRegistro}</span> a{" "}
-            <span className="font-bold text-[#1F2937]">{fimRegistro}</span> de{" "}
-            <span className="font-bold text-[#1F2937]">{totalRegistros.toLocaleString("pt-BR")}</span> registros
-          </span>
+        {/* Rodapé de Paginação */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-[#F9FAFB] border-t border-[#E7E8EC] text-xs text-[#6B7280]">
+          <div>
+            Página <span className="font-bold text-[#131822]">{pagina}</span> de{" "}
+            <span className="font-bold text-[#131822]">{totalPaginas}</span>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
-              disabled={paginaAtual === 1 || loading}
-              className="p-2 rounded-lg border border-[#E5E7EB] bg-[#FFFFFF] text-[#4B5563] hover:text-[#2563EB] hover:bg-[#F3F4F6] disabled:opacity-40 disabled:hover:bg-[#FFFFFF] disabled:cursor-not-allowed transition-colors"
-              title="Página Anterior"
+              onClick={() => setPagina((p) => Math.max(p - 1, 1))}
+              disabled={pagina <= 1}
+              className="p-1.5 rounded border border-[#E7E8EC] bg-[#FFFFFF] hover:bg-[#F4F5F7] disabled:opacity-40 disabled:cursor-not-allowed text-[#374151]"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft size={16} />
             </button>
 
-            <span className="text-xs text-[#4B5563] font-medium px-3">
-              Página <span className="text-[#2563EB] font-bold">{paginaAtual}</span> de{" "}
-              <span>{totalPaginas || 1}</span>
-            </span>
+            <span className="px-3 font-mono font-bold text-[#131822]">{pagina}</span>
 
             <button
-              onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))}
-              disabled={paginaAtual === totalPaginas || totalPaginas === 0 || loading}
-              className="p-2 rounded-lg border border-[#E5E7EB] bg-[#FFFFFF] text-[#4B5563] hover:text-[#2563EB] hover:bg-[#F3F4F6] disabled:opacity-40 disabled:hover:bg-[#FFFFFF] disabled:cursor-not-allowed transition-colors"
-              title="Próxima Página"
+              onClick={() => setPagina((p) => Math.min(p + 1, totalPaginas))}
+              disabled={pagina >= totalPaginas}
+              className="p-1.5 rounded border border-[#E7E8EC] bg-[#FFFFFF] hover:bg-[#F4F5F7] disabled:opacity-40 disabled:cursor-not-allowed text-[#374151]"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
