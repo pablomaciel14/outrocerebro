@@ -1,135 +1,62 @@
-# Áreas e fluxos funcionais
+# Áreas e Fluxos Funcionais
 
 [← Visão geral](00-VISAO-GERAL.md) · [Próximo: arquitetura →](02-ARQUITETURA.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
-## Login
+## Módulos do Sistema
 
-Rota: `/`
+O **Outro Cérebro** organiza a operação jurídica em 7 módulos principais acessíveis pela barra lateral unificada:
 
-- Comunica claramente que o sistema é pessoal e não comercial.
-- Recebe e-mail e senha.
-- Encaminha as credenciais ao servidor; a senha não fica armazenada no projeto.
-- Redireciona para o workspace somente após autenticação.
-- Se não houver área padrão salva no perfil, abre em Memória.
+---
 
-## Perfil
+### 1. Painel Geral & Visão Estratégica (`/dashboard`)
+- **Resumo de KPIs**: Cartões de destaque com o Acervo Total (3.927 processos), Ações Ativas em Andamento (3.322), Matéria Predominante (Cível com 3.552 ações / 90,4%) e Segmentos Prioritários (Particulares & Âmbar Energia).
+- **Tabela de Movimentações Recentes**: Lista os últimos casos atualizados com link direto para o acervo.
+- **Carga por Advogado (Top 4)**: Gráfico de barras horizontais indicando a distribuição das principais carteiras.
 
-Acessível pelo botão com a inicial do nome, no canto superior direito de qualquer área (Workspace e Leituras).
+---
 
-- Mostra nome e e-mail da sessão atual.
-- Alterna entre tema claro e escuro.
-- Define a área padrão ao entrar (Memória, Raciocínio, Conexões ou Agenda); persiste por conta, não só no navegador.
-- Botão **Sair**, que encerra a sessão e volta à tela de login.
+### 2. Acervo de Processos (`/dashboard/processos`)
+- **Server-Side Pagination**: Carregamento otimizado de 50 processos por página utilizando `.range(from, to)` com `{ count: 'exact' }`.
+- **Busca Inteligente**: Campo de pesquisa por número de processo, autor ou réu.
+- **Filtros por Matéria & Status**: Segmentação rápida por Cível, Eleitoral, Trabalhista, Administrativo, Em andamento ou Sentença favorável.
+- **Navegação Interativa**: Clique em qualquer linha da tabela para abrir a ficha completa do processo.
 
-## Memória
+---
 
-Rota: `/workspace`
+### 3. Ficha do Processo & Edição (`/dashboard/processos/[id]`)
+- **Identificação Completa**: Número do processo, ação, autor (polo ativo) e réu (polo passivo).
+- **Classificação Jurídica**: Matéria, tema específico e juízo / foro competente.
+- **Gestão Interna**: Advogado responsável, grupo de trabalho e linha do tempo (data de entrada e ajuizamento).
+- **Informações Financeiras**: Destaque para o valor da causa formatado em moeda brasileira (`R$`).
+- **Modal de Edição Rápida (`EditProcessModal`)**: Modal flutuante para atualizar o status e o valor da causa com sincronização imediata no banco de dados e atualização de tela sem reload completo.
 
-Espaço para registrar informações que precisam ser lembradas: notas, referências, fatos, ideias rápidas e material de consulta.
+---
 
-Funcionalidades:
+### 4. Equipe & Distribuição de Carga (`/dashboard/equipe`)
+- **Agregação no Servidor (Map-Reduce)**: O backend computa os volumes totais e ativos de cada advogado em tempo de execução.
+- **Ranqueamento Automático**: O advogado com maior carteira assume o topo como referência de 100% da escala visual.
+- **Barras de Progresso em Dupla Camada**:
+  - Barra azul clara: volume relativo do advogado em relação ao líder.
+  - Barra azul escura interna: proporção de processos efetivamente em andamento.
 
-- criar, pesquisar, selecionar, editar, visualizar, favoritar e excluir páginas;
-- escolher emoji/ícone da página;
-- salvar automaticamente;
-- escrever Markdown simples;
-- inserir blocos de título, tarefa e citação com `/`;
-- usar templates ou começar em branco.
+---
 
-## Raciocínio
+### 5. Agenda & Prazos (`/dashboard/prazos`)
+- Monitoramento de prazos fatais, publicações e intimações.
+- Badges de urgência: Urgentes (&le; 3 dias em vermelho), Esta Semana (amarelo) e Próximos 15 dias (verde).
 
-Rota: `/workspace?area=raciocinio`
+---
 
-Espaço para desenvolver questões, hipóteses, argumentos, análises e decisões. Usa o mesmo editor persistente de páginas, mas separa os registros por `area = raciocinio`.
+### 6. Documentos (`/dashboard/documentos`)
+- Repositório de peças processuais, modelos contratuais, procurações e documentos probatórios.
 
-Um fluxo típico é: questão → contexto → hipóteses → decisão → próxima ação.
+---
 
-## Conexões
+### 7. Honorários & Finanças (`/dashboard/financeiro`)
+- Monitoramento de honorários contratuais previstos, sucumbências em execução e faturamento consolidado do mês.
 
-Rota: `/workspace?area=conexoes`
+---
 
-Espaço para aproximar temas, pessoas, projetos e referências. Páginas podem usar a convenção textual `[[Nome da página]]`.
+## Próxima Leitura
 
-Limitação atual: os marcadores `[[...]]` ainda são texto editável; backlinks e grafo automático entre páginas não são calculados pelo servidor nesta versão.
-
-## Templates
-
-A galeria aparece ao clicar em **Nova página**, nos botões de estado vazio ou pelo atalho `⌘N`.
-
-| Template | Uso |
-| --- | --- |
-| Planejamento semanal | objetivos, prioridades e tarefas por dia |
-| Projeto pessoal | objetivo, etapas, recursos, decisões e ações |
-| Notas de reunião | pauta, participantes, decisões e responsáveis |
-| Rastreador de hábitos | acompanhamento semanal e reflexão |
-| Controle financeiro | receitas, despesas, saldo e metas |
-
-O template apenas fornece uma estrutura inicial. Depois da escolha, título, emoji e conteúdo podem ser completamente alterados. A página em branco permanece disponível.
-
-## Agenda
-
-Rota: `/workspace?area=agenda`
-
-- calendário mensal com seis semanas visíveis;
-- seleção de dia;
-- criação de tarefa ou compromisso;
-- horários inicial e final para compromissos;
-- cinco cores de organização;
-- conclusão e reabertura de tarefas;
-- exclusão com confirmação;
-- painel de itens do dia;
-- próximos itens exibidos também no contexto das páginas.
-
-No celular, o mês usa marcadores compactos e o detalhamento do dia aparece abaixo do calendário.
-
-## Leituras
-
-Rota: `/workspace/leituras`
-
-### Biblioteca
-
-- upload de PDF de até 40 MB;
-- arquivo privado e associado ao proprietário;
-- status `Desejo ler`, `Lendo` e `Já lido`;
-- exclusão do registro e do arquivo;
-- retomada da última página.
-
-### Leitor de PDF
-
-- renderização nítida adaptada à densidade da tela;
-- navegação por página, toque e gesto lateral;
-- modo imersivo e temas de leitura;
-- carregamento por intervalo de bytes;
-- marcadores de página;
-- destaques em cinco cores;
-- notas opcionais ligadas ao destaque;
-- cronômetro acumulado de leitura.
-
-### Markdown da leitura
-
-- texto extraído no navegador e separado por página;
-- links preservados quando reconhecidos;
-- busca no conteúdo;
-- destaques e notas também na representação Markdown;
-- layout que não ultrapassa a largura da tela.
-
-PDFs apenas escaneados continuam visíveis, mas exigirão OCR futuro para gerar texto útil.
-
-## Instalar em outras plataformas
-
-Ícones na barra lateral do Workspace — só depois de autenticado, nunca na tela de login pública — permitem instalar o sistema fora do navegador:
-
-- **PWA**: botão que dispara a instalação nativa do navegador (ou mostra instruções manuais no iOS).
-- **Desktop (Windows)**: baixa `OutroCerebroSetup.exe`, um invólucro Electron que carrega o site.
-- **Extensão Chrome**: baixa `OutroCerebroExtension.zip`, que abre o site num painel lateral do navegador.
-
-Nenhum dos três roda lógica própria — todos carregam `https://outrocerebro.com.br` em tempo real, então uma alteração publicada no site aparece neles imediatamente, sem reinstalar nada. Detalhes técnicos em [Operação — Clientes da Plataforma](04-OPERACAO-E-MANUTENCAO.md#clientes-da-plataforma-desktop-extensão-e-mobile).
-
-## Navegação e comandos
-
-- `⌘K` ou `Ctrl+K`: busca de páginas.
-- `⌘N` ou `Ctrl+N`: galeria de templates.
-- `⌘⇧P` ou `Ctrl+Shift+P`: ações rápidas.
-- `/` em linha vazia: menu de blocos.
-
-Os ícones do menu móvel são links HTML reais e possuem alvos de toque ampliados.
+Consulte [Arquitetura e estrutura do código](02-ARQUITETURA.md) para compreender a camada técnica.

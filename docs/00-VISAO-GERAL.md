@@ -1,72 +1,70 @@
-# Visão geral e conceito
+# Visão Geral e Conceito
 
 [← Índice](../README.md) · [Próximo: áreas e fluxos →](01-AREAS-E-FLUXOS.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
 ## Conceito
 
-O **Outro Cérebro** é uma extensão digital da memória e do raciocínio de uma única pessoa. Ele reúne captura de ideias, desenvolvimento de pensamentos, relações entre assuntos, planejamento de compromissos e leitura ativa de documentos.
+O **Outro Cérebro** é o sistema proprietário, privado e de alta performance para **Gestão Jurídica, Acervo Processual & Dashboard Estratégico** de Pablo Maciel. Ele reúne inteligência contenciosa, monitoramento de prazos, repositório de peças e distribuição balanceada de carga operacional.
 
-O produto parte de cinco princípios:
+O sistema é construído sobre quatro pilares:
 
-1. **Privacidade:** o conteúdo é pessoal e exige autenticação.
-2. **Continuidade:** notas, agenda e leituras sobrevivem à troca de sessão e dispositivo.
-3. **Baixo atrito:** registrar, retomar e editar deve exigir poucos toques.
-4. **Conexão:** conhecimento não deve ficar isolado; páginas podem referenciar outras ideias.
-5. **Leveza:** a interface deve parecer premium sem depender de uma camada visual pesada.
+1. **Claridade Estrutural (Foco & TDAH-Friendly):** Eliminação de ruídos e alta vibração visual. Uso de tons off-white quentes (`#FAFAFA`), tipografia geométrica **Inter** (`antialiased`) e ícones de linha fina (`strokeWidth={1.5}`) para leitura fluida e redução da fadiga cognitiva.
+2. **Alta Performance com Server-Side Rendering (SSR):** Processamento de grandes volumes processuais (3.927+ processos) diretamente no servidor através de *Server Components*, *Server-Side Pagination* (50 registros/página) e agregação *Map-Reduce*.
+3. **Privacidade e Isolamento:** Autenticação robusta (Supabase + HMAC SHA-256) protegida na borda por Web Middleware, com dados protegidos contra acessos não autorizados.
+4. **Agilidade Operacional:** Acesso instantâneo à ficha detalhada de qualquer processo, com edição rápida de status e valores da causa através de modais interativos em tempo real.
+
+---
 
 ## O que o sistema é
 
-- Um workspace pessoal de conhecimento.
-- Um editor de páginas em Markdown simples.
-- Uma agenda mensal para tarefas e compromissos.
-- Uma biblioteca privada de PDFs com leitura ativa.
-- Um sistema responsivo com temas claro e escuro.
-- Instalável como PWA, aplicativo Desktop (Windows/Electron) e extensão Chrome — todos *thin clients* que carregam a mesma versão web, sem lógica própria.
+- Um painel de KPIs e inteligência jurídica sobre o acervo contencioso.
+- Um data grid de processos com paginação no servidor e filtros por matéria/status.
+- Uma central de detalhes processuais com partes, classificação, finanças e edição inline.
+- Um módulo de distribuição e balanceamento de carga da equipe de advogados.
+- Um repositório de agenda, prazos, documentos e controle financeiro de honorários.
+
+---
 
 ## O que o sistema não é
 
-- Não é um produto comercial.
-- Não é uma rede social ou plataforma colaborativa.
-- Não possui cadastro público ou múltiplos clientes.
-- Não oferece cobrança, assinatura ou marketplace.
-- Não substitui o Notion ou o Google Calendar; usa algumas ideias de interação adequadas ao objetivo pessoal.
+- Não é um SaaS comercial aberto ao público.
+- Não possui cadastro público ou cobrança de assinaturas.
+- Não expõe chaves de banco de dados no cliente.
 
-## Usuário e acesso
+---
 
-O proprietário e único usuário autorizado é Pablo Maciel. O endereço público mostra somente a entrada; workspace, APIs e arquivos exigem a sessão pessoal válida.
-
-## Visão funcional resumida
+## Visão Funcional Resumida
 
 ```text
-Login privado
-  └── Workspace
-      ├── Memória      → capturar e guardar
-      ├── Raciocínio   → desenvolver e decidir
-      ├── Conexões     → relacionar assuntos
-      ├── Agenda       → planejar tarefas e compromissos
-      └── Leituras     → ler, destacar, anotar e retomar PDFs
+Login Privado (/)
+  └── Dashboard (/dashboard)
+      ├── Visão Geral          → KPIs (3.927 processos), matérias e movimentações
+      ├── Acervo de Processos  → Busca, filtros e paginação no servidor
+      │   └── Ficha [id]       → Detalhes completos e modal de edição rápida
+      ├── Equipe & Clientes    → Distribuição de carga por advogado (Map-Reduce)
+      ├── Agenda & Prazos      → Controle de publicações e fatalidades
+      ├── Documentos           → Repositório de peças e modelos
+      ├── Honorários           → Controle de honorários e faturamento
+      └── Configurações        → Parâmetros, conexões e segurança
 ```
 
-## Estado de maturidade
+---
+
+## Estado de Maturidade
 
 | Capacidade | Estado |
-| --- | --- |
-| Login pessoal | Funcional |
-| Páginas editáveis | Funcional e persistente |
-| Templates de páginas | Funcional; cinco modelos estáticos e editáveis |
-| Agenda | Funcional e persistente |
-| Biblioteca e leitor de PDFs | Funcional e persistente |
-| Destaques e notas de leitura | Funcional e persistente |
-| Relações escritas com `[[...]]` | Aceitas no conteúdo |
-| Backlinks e grafo automático entre páginas | Planejado; ainda não calculado automaticamente |
-| OCR para PDF digitalizado | Planejado; ainda não implementado |
-| Menu de perfil (tema, área padrão, sair) | Funcional e persistente por conta |
-| PWA instalável | Funcional; sem cache/offline (só instalabilidade) |
-| Aplicativo Desktop (Windows) | Funcional; publicação do instalador é manual, sem CI |
-| Extensão Chrome | Funcional; publicação do `.zip` é manual, sem CI |
-| Testes automatizados (CSRF, isolamento de dados, validação de PDF, bloqueio de login) | Funcional, cobertura comportamental real |
-| Testes automatizados para Desktop/Extensão/PWA | Ainda não existem |
+| :--- | :--- |
+| Login pessoal seguro | Funcional (Supabase + Sessão HMAC SHA-256) |
+| Dashboard de KPIs | Funcional com auditoria de 3.927 processos |
+| Data Grid com Paginação no Servidor | Funcional (50 processos por página, busca e filtros) |
+| Ficha do Processo & Modal de Edição | Funcional com mutação direta e `router.refresh()` |
+| Distribuição de Carga da Equipe | Funcional (Map-Reduce no servidor e barras em dupla camada) |
+| Web Middleware de Proteção | Funcional sem dependências de edge legadas |
+| Design Claridade Estrutural | Funcional (Inter, strokeWidth 1.5, paleta calma TDAH) |
+| Suíte de Testes Automatizados | 37/37 testes comportamentais aprovados |
 
-## Próxima leitura
+---
 
-Consulte [Áreas e fluxos funcionais](01-AREAS-E-FLUXOS.md) para entender cada parte da interface.
+## Próxima Leitura
+
+Consulte [Áreas e fluxos funcionais](01-AREAS-E-FLUXOS.md) para entender cada módulo em detalhes.
