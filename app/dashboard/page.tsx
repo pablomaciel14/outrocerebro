@@ -5,10 +5,12 @@ import {
   ArrowRight, 
   ArrowUpRight 
 } from "lucide-react";
+import { GraficoRisco, RiscoData } from "@/components/GraficoRisco";
+import { getSupabaseClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardOverviewPage() {
+export default async function DashboardOverviewPage() {
   const prazosLista = [
     {
       dia: "22",
@@ -72,6 +74,43 @@ export default function DashboardOverviewPage() {
     { nome: "Lucas Pires", total: 417, pct: 24 },
     { nome: "João Vitor", total: 377, pct: 21 },
   ];
+
+  // Busca e contagem de prognóstico de risco (Supabase com fallback analítico da base Âmbar)
+  let dadosGraficoRisco: RiscoData[] = [
+    { name: "REMOTA", value: 542 },
+    { name: "POSSÍVEL", value: 148 },
+    { name: "PROVÁVEL", value: 45 },
+    { name: "NÃO AVALIADO", value: 18 },
+  ];
+
+  try {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { data: riscoData } = await supabase
+        .from("processos")
+        .select("risco_perda")
+        .eq("grupo_trabalho", "Âmbar Energia");
+
+      if (riscoData && riscoData.length > 0) {
+        const contagemRisco: Record<string, number> = {};
+        riscoData.forEach((proc: { risco_perda?: string }) => {
+          const risco = proc.risco_perda ? proc.risco_perda.trim().toUpperCase() : "NÃO AVALIADO";
+          contagemRisco[risco] = (contagemRisco[risco] || 0) + 1;
+        });
+
+        const computed = Object.entries(contagemRisco).map(([name, value]) => ({
+          name,
+          value,
+        }));
+
+        if (computed.length > 0) {
+          dadosGraficoRisco = computed;
+        }
+      }
+    }
+  } catch {
+    // Mantém o baseline
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -199,10 +238,10 @@ export default function DashboardOverviewPage() {
         </div>
       </section>
 
-      {/* 5. Componente 3 e 4: Rodapé Dividido (Grid de 2 colunas) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Coluna Esquerda: Movimentações recentes */}
-        <section className="bg-[#FFFFFF] border border-[#E7E8EC] rounded-2xl shadow-xs overflow-hidden">
+      {/* 5. Grid Inferior: Movimentações Recentes, Carga por Advogado e Gráfico de Risco */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Coluna 1: Movimentações recentes */}
+        <section className="bg-[#FFFFFF] border border-[#E7E8EC] rounded-2xl shadow-xs overflow-hidden lg:col-span-1">
           <div className="flex items-center justify-between p-5 border-b border-[#F4F5F7]">
             <div>
               <h2 className="text-base font-bold text-[#131822]">Movimentações recentes</h2>
@@ -242,8 +281,8 @@ export default function DashboardOverviewPage() {
           </div>
         </section>
 
-        {/* Coluna Direita: Carga por advogado */}
-        <section className="bg-[#FFFFFF] border border-[#E7E8EC] rounded-2xl shadow-xs overflow-hidden">
+        {/* Coluna 2: Carga por advogado */}
+        <section className="bg-[#FFFFFF] border border-[#E7E8EC] rounded-2xl shadow-xs overflow-hidden lg:col-span-1">
           <div className="flex items-center justify-between p-5 border-b border-[#F4F5F7]">
             <div>
               <h2 className="text-base font-bold text-[#131822]">Carga por advogado</h2>
@@ -275,6 +314,11 @@ export default function DashboardOverviewPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Coluna 3: Gráfico de Rosca de Prognóstico de Risco (Recharts) */}
+        <section className="lg:col-span-1">
+          <GraficoRisco data={dadosGraficoRisco} />
         </section>
       </div>
     </div>
