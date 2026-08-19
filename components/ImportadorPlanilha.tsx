@@ -56,8 +56,20 @@ export function ImportadorPlanilha() {
             ? row["Valor da causa"] 
             : parseFloat(String(row["Valor da causa"] || "0").replace(/[^0-9.-]+/g, "")) || 0;
 
+          const parseData = (val: any) => {
+            if (!val) return null;
+            try {
+              const d = new Date(val);
+              return !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
+            } catch {
+              return null;
+            }
+          };
+
           return {
             pj_protocolo: String(row["PJ - Protocolo Jurídico"] || row["pj_protocolo"] || "").trim(),
+            data_entrada: parseData(row["Data de Entrada"] || row["Data Entrada"] || row["data_entrada"]),
+            data_ajuizamento: parseData(row["Data de Ajuizamento"] || row["Data Ajuizamento"] || row["data_ajuizamento"] || row["Data de Distribuição"]),
             materia: String(row["Matéria"] || row["Materia"] || row["materia"] || "Cível").trim(),
             tema: String(row["Tema"] || row["tema"] || "").trim(),
             grupo_trabalho: String(row["Grupo de Trabalho"] || row["grupo_trabalho"] || "").trim(),

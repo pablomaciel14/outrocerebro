@@ -56,12 +56,32 @@ export function SincronizadorAmbar() {
               ? row["Valor atualizado"] 
               : parseFloat(String(row["Valor atualizado"] || "0").replace(/[^0-9.-]+/g, "")) || 0;
 
+            const valorSentenca = typeof row["Valor da sentença"] === "number"
+              ? row["Valor da sentença"]
+              : parseFloat(String(row["Valor da sentença"] || "0").replace(/[^0-9.-]+/g, "")) || 0;
+
+            let dataSentenca = null;
+            if (row["Data da sentença"]) {
+              try {
+                const d = new Date(row["Data da sentença"]);
+                if (!isNaN(d.getTime())) {
+                  dataSentenca = d.toISOString().split("T")[0];
+                }
+              } catch {
+                dataSentenca = null;
+              }
+            }
+
             todosProcessosAmbar.push({
               numero_processo: numProcesso,
               andamento_cliente: String(row["Andamento Processual"] || "Sem andamento").trim(),
               risco_perda: String(row["Possibilidade de perda"] || "Não avaliado").trim().toUpperCase(),
               fase_atual: String(row["Fase Atual"] || "Não informada").trim(),
               valor_atualizado: valorAtualizado,
+              sentenca_cliente: String(row["Sentença"] || "").trim(),
+              valor_sentenca: valorSentenca,
+              data_sentenca: dataSentenca,
+              advogado_interno_cliente: String(row["Advogado Interno Responsável"] || "").trim(),
               grupo_trabalho: "Âmbar Energia",
             });
           }
