@@ -120,11 +120,11 @@ export function Sidebar({
           </Link>
 
           <Link 
-            href="/dashboard/documentos" 
-            className={`${baseLinkClass} ${isActive("/dashboard/documentos") ? activeLinkClass : inactiveLinkClass}`}
+            href="/dashboard/sincronizacao" 
+            className={`${baseLinkClass} ${isActive("/dashboard/sincronizacao") ? activeLinkClass : inactiveLinkClass}`}
           >
             <FolderOpen size={17} strokeWidth={1.7} />
-            <span>Documentos</span>
+            <span>Sincronização</span>
           </Link>
         </div>
 
