@@ -7,7 +7,6 @@ import { readLimitedJson, rejectCrossSiteMutation, sha256 } from "../../../secur
 
 export const dynamic = "force-dynamic";
 
-const AUTHORIZED_EMAIL = (process.env.AUTHORIZED_EMAIL || "pablo@outrocerebro.com.br").toLowerCase();
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
 
@@ -49,12 +48,12 @@ export async function POST(request: Request) {
   const blocked = await blockedResponse(key, now);
   if (blocked) return blocked;
 
-  if (email !== AUTHORIZED_EMAIL || !password || password.length > 512) {
+  if (!email || !password || password.length > 512) {
     await recordFailure(key, now);
-    return Response.json({ error: "E-mail ou senha incorretos." }, { status: 401, headers: { "cache-control": "no-store" } });
+    return Response.json({ error: "Informe o e-mail e a senha cadastrados." }, { status: 400, headers: { "cache-control": "no-store" } });
   }
 
-  // Se Supabase estiver configurado, valida credenciais remotas
+  // 1. Se Supabase estiver configurado, autentica via Supabase Auth
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     let response: Response;
     try {
@@ -64,18 +63,27 @@ export async function POST(request: Request) {
         body: JSON.stringify({ email, password }),
       });
     } catch {
-      return Response.json({ error: "Autenticação temporariamente indisponível." }, { status: 503, headers: { "cache-control": "no-store", "retry-after": "30" } });
+      return Response.json({ error: "Serviço de autenticação temporariamente indisponível. Tente em instantes." }, { status: 503, headers: { "cache-control": "no-store" } });
     }
 
     if (!response.ok) {
       await recordFailure(key, now);
-      return Response.json({ error: "E-mail ou senha incorretos." }, { status: 401, headers: { "cache-control": "no-store" } });
+      const errorData = await response.json().catch(() => ({}));
+      const errorMsg = (errorData as { error_description?: string; msg?: string }).error_description || (errorData as { error_description?: string; msg?: string }).msg || "E-mail ou senha incorretos.";
+      return Response.json({ error: errorMsg }, { status: 401, headers: { "cache-control": "no-store" } });
     }
 
     const result = await response.json() as { user?: { id?: string; email?: string } };
-    if (!result.user?.id || result.user.email?.toLowerCase() !== AUTHORIZED_EMAIL) {
+    if (!result.user?.id) {
       await recordFailure(key, now);
-      return Response.json({ error: "Acesso não autorizado." }, { status: 403, headers: { "cache-control": "no-store" } });
+      return Response.json({ error: "Falha na confirmação de usuário." }, { status: 401, headers: { "cache-control": "no-store" } });
+    }
+
+    // Se houver restrição opcional de AUTHORIZED_EMAIL configurada
+    const authorizedEmail = process.env.AUTHORIZED_EMAIL?.toLowerCase();
+    if (authorizedEmail && result.user.email?.toLowerCase() !== authorizedEmail) {
+      await recordFailure(key, now);
+      return Response.json({ error: "Acesso não autorizado para esta conta." }, { status: 403, headers: { "cache-control": "no-store" } });
     }
 
     try {
@@ -87,6 +95,11 @@ export async function POST(request: Request) {
     return Response.json({ ok: true }, { headers: { "set-cookie": await createPersonalSessionCookie(email, result.user.id), "cache-control": "no-store" } });
   }
 
-  // Em modo de desenvolvimento ou fallback
-  return Response.json({ ok: true }, { headers: { "set-cookie": await createPersonalSessionCookie(email, "owner-id"), "cache-control": "no-store" } });
+  // 2. Se as variáveis do Supabase não estiverem no ambiente Vercel
+  const fallbackEmail = (process.env.AUTHORIZED_EMAIL || "pablo@outrocerebro.com.br").toLowerCase();
+  if (email === fallbackEmail && password) {
+    return Response.json({ ok: true }, { headers: { "set-cookie": await createPersonalSessionCookie(email, "owner-id"), "cache-control": "no-store" } });
+  }
+
+  return Response.json({ error: "Variáveis do Supabase (NEXT_PUBLIC_SUPABASE_URL) não configuradas na Vercel." }, { status: 500, headers: { "cache-control": "no-store" } });
 }

@@ -7,7 +7,6 @@ const LEGACY_COOKIE_NAME = "oc_personal_session";
 const SESSION_SECONDS = 60 * 60 * 12;
 const encoder = new TextEncoder();
 
-const AUTHORIZED_EMAIL = (process.env.AUTHORIZED_EMAIL || "pablo@outrocerebro.com.br").toLowerCase();
 const SESSION_SECRET = process.env.SESSION_SECRET || "outro-cerebro-sessao-segura-padrao-min-32-caracteres-2026";
 
 type SessionPayload = { aud: "outro-cerebro"; email: string; sub: string; iat: number; exp: number; nonce: string; v: 2 };
@@ -63,9 +62,9 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
   // Em ambiente de desenvolvimento local, provê usuário mock se não houver cookie ativo
   if (!token && process.env.NODE_ENV === "development") {
     return {
-      userId: AUTHORIZED_EMAIL,
+      userId: "pablo@outrocerebro.com.br",
       displayName: "Pablo Maciel",
-      email: AUTHORIZED_EMAIL,
+      email: "pablo@outrocerebro.com.br",
     };
   }
 
@@ -77,8 +76,12 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
     const valid = await crypto.subtle.verify("HMAC", await signingKey(), decodeBase64Url(signature), encoder.encode(encoded));
     if (!valid) return null;
     const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encoded))) as SessionPayload;
+    const authorizedEmail = process.env.AUTHORIZED_EMAIL?.toLowerCase();
     const now = Math.floor(Date.now() / 1000);
-    if (!AUTHORIZED_EMAIL || payload.aud !== "outro-cerebro" || payload.v !== 2 || !payload.sub || !payload.nonce || payload.email !== AUTHORIZED_EMAIL || payload.iat > now + 60 || payload.exp <= now || payload.exp - payload.iat > SESSION_SECONDS) return null;
+    
+    if (authorizedEmail && payload.email !== authorizedEmail) return null;
+    if (payload.aud !== "outro-cerebro" || payload.v !== 2 || !payload.sub || !payload.nonce || payload.iat > now + 60 || payload.exp <= now || payload.exp - payload.iat > SESSION_SECONDS) return null;
+    
     const workspaceUser = await getChatGPTUser();
     return {
       userId: payload.email,
@@ -88,9 +91,9 @@ export async function getPersonalUser(): Promise<PersonalUser | null> {
   } catch {
     if (process.env.NODE_ENV === "development") {
       return {
-        userId: AUTHORIZED_EMAIL,
+        userId: "pablo@outrocerebro.com.br",
         displayName: "Pablo Maciel",
-        email: AUTHORIZED_EMAIL,
+        email: "pablo@outrocerebro.com.br",
       };
     }
     return null;
