@@ -35,18 +35,23 @@ Site principal: <https://outrocerebro.com.br>
 
 ## Estado atual
 
-- Página de login (`/`) intacta, segura e com tema dinâmico.
-- Novo sistema de Gestão Jurídica & Dashboard consolidado nas rotas `/dashboard`, `/dashboard/processos`, `/dashboard/processos/[id]` e `/dashboard/equipe`.
+- Plataforma 100% migrada para **Next.js 16 (Turbopack)** com deploy automatizado via **Vercel** e GitHub.
+- Painel de Gestão Jurídica v3 consolidado nas rotas `/dashboard`, `/dashboard/processos`, `/dashboard/processos/[id]`, `/dashboard/equipe`, `/dashboard/prazos`, `/dashboard/financeiro`, `/dashboard/configuracoes` e `/dashboard/sincronizacao`.
+- Central de Sincronização & Integrações ativa com três motores: Importador Geral do CPJ, Sincronizador Multia-abas Âmbar Energia (22 abas) e Sincronizador de Tarefas/Prazos com Upsert idempotente no Supabase PostgreSQL.
+- Gráfico de Rosca de Prognóstico de Risco (Recharts) com cores funcionais (Remota, Possível, Provável).
+- Rolagem (scroll) nativa, suave e fluida em todas as páginas após correção de `overflow` em `globals.css` e no layout.
 - Proteção de rotas centralizada via `middleware.ts` e `requirePersonalUser`.
-- Paginação no servidor (Server-Side Pagination), busca e filtros avançados no acervo processual.
-- Ficha completa de processo com modal interativo de edição e sincronização em tempo real.
-- Agregação e distribuição de carga por advogado (Map-Reduce) no servidor.
-- Módulos legados do antigo workspace de notas/leituras removidos com sucesso.
+- Paginação rápida no cliente e servidor sobre o acervo real de 3.883 processos.
+- Ficha completa de processo com modal interativo de edição e sincronização.
 - Cobertura de testes comportamentais reais (37/37) em `tests/`.
 
 ## Última atualização funcional
 
-Em **19 de agosto de 2026**, foi implementado o módulo isolado de **Gestão Estratégica & Dashboard de KPIs** acessível via rota protegida `/dashboard`, contendo visão consolidada do acervo jurídico (3.927 processos), matérias predominantes, carga de trabalho por advogado e estrutura para futuros data grids e gráficos analíticos.
+Em **19 de agosto de 2026**, foi consolidada a **Plataforma SaaS de Gestão Jurídica & Central de Sincronização**:
+1. **Infraestrutura**: Migração definitiva para Vercel com Next.js 16 nativo.
+2. **Central de Integrações (`/dashboard/sincronizacao`)**: Três motores de importação (`ImportadorPlanilha`, `SincronizadorAmbar` e `SincronizadorTarefas`) que leem arquivos `.xlsx` no navegador e gravam diretamente no Supabase PostgreSQL via *Upsert* sem duplicações.
+3. **Analytics**: Gráfico Donut de prognóstico de risco (Recharts) integrado à Visão Geral do Dashboard.
+4. **Legal Design v3 & Acervo**: Radar de Prazos Fatais, strip de KPIs (3.927 processos, R$ 1,84M previstos), data grid paginado de 50 em 50 e visualização de carga por advogado.
 
 Em **16 de agosto de 2026**, o fluxo de publicação foi documentado de forma explícita: além do repositório principal no GitHub, o app possui um projeto no **Sites**, responsável pela produção em `outrocerebro.com.br`, pelos bindings D1/R2 e pela implantação. Um push ao GitHub não atualiza o site sozinho; toda entrega deve passar pelo repositório de origem, salvamento de versão e implantação do Sites, aguardando o estado final de sucesso (ver [Operação — Publicação](docs/04-OPERACAO-E-MANUTENCAO.md#publicação)).
 
@@ -71,3 +76,13 @@ npm run db:generate
 ```
 
 Antes de publicar: executar build, testes, revisão de segurança proporcional à alteração e conferir se migrações necessárias estão em `drizzle/`.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

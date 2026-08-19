@@ -2,15 +2,21 @@
 
 [← Índice](../README.md) · [Ver grafo](GRAFO-DA-DOCUMENTACAO.md)
 
-## 2026-08-19 — Tipografia Geométrica (Inter), Vocabulário Visual & Módulos Estratégicos
+## 2026-08-19 — Plataforma SaaS Jurídica, Central de Sincronização, Reconciliação Multia-abas & Gráficos Analíticos
 
-- Área afetada: `app/layout.tsx`, `components/Sidebar.tsx`, `app/dashboard/layout.tsx`, novas rotas `app/dashboard/prazos/page.tsx`, `app/dashboard/documentos/page.tsx`, `app/dashboard/financeiro/page.tsx`, `app/dashboard/configuracoes/page.tsx`.
+- Área afetada: `app/dashboard/*`, `components/*`, `lib/*`, `data/*`, `package.json`, `vercel.json`.
 - Corrigido/adicionado:
-  - **Tipografia**: Configuração da fonte geométrica sem serifa **Inter** via `next/font/google` com renderização nítida (`antialiased`).
-  - **Vocabulário Visual**: Padronização dos ícones do `lucide-react` com espessura fina (`strokeWidth={1.5}`), proporcionando leveza visual e skimming rápido.
-  - **Notificações**: Inclusão do ícone de sino (`Bell`) na barra superior direita do `DashboardLayout` com indicador de publicação ativa.
-  - **Novos Módulos**: Expansão do menu lateral com as rotas *Agenda & Prazos* (`/dashboard/prazos`), *Documentos* (`/dashboard/documentos`), *Honorários* (`/dashboard/financeiro`), *Equipe & Clientes* (`/dashboard/equipe`) e *Configurações* (`/dashboard/configuracoes`).
-- Validação: `npm run build` gerou todas as rotas com sucesso; suíte de testes `node --test` aprovada (37/37).
+  - **Migração para Vercel & Next.js 16 Nativo**: Remoção de dependências legadas de Cloudflare Workers/OpenAI Sites; adoção do Next.js 16 com Turbopack e deploy direto na Vercel.
+  - **Acervo Jurídico Real (3.883 Processos)**: Higienização e integração do dataset real do escritório com busca em memória ultra-rápida, paginação de 50 em 50 e visualização de fichas completas de processos (`/dashboard/processos/[id]`).
+  - **Layout Corporativo e Legal Design v3**: Painel moderno e limpo com **Radar de Prazos Fatais** (colunas de 3 dias, semana, 15 dias e cumpridos no mês), strip de KPIs do acervo e barras de carga de trabalho por advogado.
+  - **Correção Definitiva de Rolagem (Scroll)**: Remoção da regra legada `body { overflow: hidden; }` em `app/globals.css` e adaptação do container `<main>`, proporcionando rolagem suave e nativa em todo o sistema.
+  - **Central de Sincronização & Integrações (`/dashboard/sincronizacao`)**:
+    - `ImportadorPlanilha.tsx`: Motor de importação em lote para planilhas gerais do CPJ com envio via *Upsert* (sem duplicação).
+    - `SincronizadorAmbar.tsx`: Motor especializado que varre automaticamente todas as 22 abas do *Relatório Jurídico Geral da Âmbar Energia*, extraindo risco de perda (*Remota, Possível, Provável*), andamento, fase e valores atualizados.
+    - `SincronizadorTarefas.tsx`: Motor de conciliação de pautas pendentes e concluídas com chave única anti-duplicação (`numero_processo, evento, data_fatal`).
+  - **Visualização Gráfica de Risco (Recharts)**: `GraficoRisco.tsx` com gráfico de rosca (Donut Chart) e paleta funcional de cores (Verde = Remota, Amarelo = Possível, Vermelho = Provável).
+  - **Modelagem Relacional (Supabase)**: Criação das tabelas `processos` e `tarefas` com chaves únicas, constraints e índices otimizados (`idx_processos_numero`, `idx_processos_risco`, `idx_processos_responsavel`, `idx_tarefas_processo`).
+- Validação: `npm run build` gerando todas as 12 rotas do Next.js sem erros em 5s; suíte de testes passando 37/37 com 100% de sucesso.
 
 
 
