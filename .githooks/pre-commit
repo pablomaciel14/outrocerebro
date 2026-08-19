@@ -1,0 +1,43 @@
+#!/bin/sh
+# Outro Cérebro — lembrete/checagem obrigatória de documentação.
+#
+# Ativado automaticamente por `npm install` (script "prepare" em package.json,
+# que roda `git config core.hooksPath .githooks`). Vale para qualquer IA ou
+# programador que clone o repo e rode `npm install` uma vez, não é algo que
+# cada pessoa precisa configurar manualmente.
+#
+# Regra (de AGENTS.md): "Atualizar docs/CHANGELOG.md e a seção 'Estado atual'
+# deste arquivo após cada entrega relevante." Este hook não escreve a
+# documentação por você — ele só bloqueia o commit se código mudou sem que
+# docs/CHANGELOG.md ou AGENTS.md também tenham mudado no mesmo commit.
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+[ -z "$staged" ] && exit 0
+
+source_changed=$(printf '%s\n' "$staged" | grep -E '^(app/|db/|drizzle/|tests/|worker/)')
+docs_changed=$(printf '%s\n' "$staged" | grep -E '^(docs/CHANGELOG\.md|AGENTS\.md)$')
+
+if [ -n "$source_changed" ] && [ -z "$docs_changed" ]; then
+  echo ""
+  echo "pre-commit: este commit muda codigo mas nao atualiza docs/CHANGELOG.md nem AGENTS.md."
+  echo ""
+  echo "Arquivos de codigo neste commit:"
+  printf '%s\n' "$source_changed" | sed 's/^/  - /'
+  echo ""
+  echo "Por convencao do projeto (AGENTS.md), toda entrega relevante registra em"
+  echo "docs/CHANGELOG.md: o que mudou, areas afetadas, o que foi preservado, como"
+  echo "foi validado e quais limitacoes restam — e atualiza a secao \"Estado atual\""
+  echo "de AGENTS.md quando o estado do sistema mudou de verdade."
+  echo ""
+  echo "Se a mudanca tambem afeta arquitetura, dados/seguranca, areas/fluxos ou"
+  echo "operacao, atualize o docs/NN-*.md correspondente e, se surgiu uma area"
+  echo "nova, o grafo em docs/GRAFO-DA-DOCUMENTACAO.md."
+  echo ""
+  echo "Para pular esta checagem uma unica vez (nao recomendado sem motivo real):"
+  echo "  git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+exit 0

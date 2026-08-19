@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "echo Preparing secure redirect",
+  "outputDirectory": "vercel-static",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://outrocerebro.com.br/",
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://outrocerebro.com.br/:path*",
+      "permanent": false
+    }
+  ]
+}
