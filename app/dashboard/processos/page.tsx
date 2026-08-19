@@ -78,14 +78,7 @@ export default function ProcessosPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/dashboard/configuracoes"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-xs transition-colors"
-          >
-            <FolderOpen size={14} strokeWidth={2} />
-            <span>Importar Planilha</span>
-          </Link>
+        <div className="flex items-center gap-2">
           <span className="text-xs font-mono bg-[#FFFFFF] border border-[#E7E8EC] px-3 py-1.5 rounded-xl text-[#6B7280]">
             Exibindo {itensExibidos.length} de {total.toLocaleString("pt-BR")} filtrados
           </span>

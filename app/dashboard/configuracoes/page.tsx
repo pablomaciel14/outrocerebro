@@ -1,52 +1,60 @@
 import React from "react";
-import { Settings, Shield, User, Database, FileSpreadsheet } from "lucide-react";
+import { Settings, Database, Shield, HardDrive } from "lucide-react";
 import { ImportadorPlanilha } from "@/components/ImportadorPlanilha";
 
 export default function ConfiguracoesPage() {
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-8">
+      {/* Cabeçalho */}
       <div>
-        <h1 className="text-xl font-bold text-[#131822] tracking-tight flex items-center gap-2.5">
-          <Settings className="text-[#2563EB] w-6 h-6" strokeWidth={1.8} />
-          <span>Configurações & Sincronização</span>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1F2937] tracking-tight flex items-center gap-3">
+          <Settings className="text-[#2563EB]" size={30} strokeWidth={1.5} />
+          <span>Configurações do Sistema</span>
         </h1>
-        <p className="text-xs text-[#6B7280] mt-1">
-          Preferências do ambiente, conexões com Supabase e sincronização em lote de planilhas.
+        <p className="text-[#6B7280] mt-1.5 text-sm sm:text-base">
+          Gerencie integrações, banco de dados e preferências da sua conta.
         </p>
       </div>
 
-      {/* Componente de Importação de Planilha (Upsert) */}
-      <ImportadorPlanilha />
-
-      {/* Parâmetros do Escritório e Banco de Dados */}
-      <div className="bg-[#FFFFFF] border border-[#E7E8EC] rounded-2xl p-6 shadow-xs space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-[#F4F5F7]">
-          <div className="w-9 h-9 rounded-xl bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center shrink-0">
-            <User size={18} strokeWidth={1.8} />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-[#131822]">Perfil do Titular</h2>
-            <p className="text-xs text-[#6B7280]">Pablo Maciel (pablo@outrocerebro.com.br) · 1.758 processos atribuídos</p>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Menu Lateral Interno de Configurações */}
+        <div className="lg:col-span-1 space-y-2">
+          <button className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl text-[#1F2937] font-semibold shadow-xs transition-all text-left text-xs sm:text-sm">
+            <Database size={18} className="text-[#2563EB]" strokeWidth={1.5} />
+            <span>Sincronização de Dados</span>
+          </button>
+          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F3F4F6] rounded-xl text-[#6B7280] font-medium transition-all text-left text-xs sm:text-sm">
+            <Shield size={18} strokeWidth={1.5} />
+            <span>Segurança e Permissões</span>
+          </button>
+          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F3F4F6] rounded-xl text-[#6B7280] font-medium transition-all text-left text-xs sm:text-sm">
+            <HardDrive size={18} strokeWidth={1.5} />
+            <span>Armazenamento</span>
+          </button>
         </div>
 
-        <div className="flex items-center gap-3 pb-4 border-b border-[#F4F5F7]">
-          <div className="w-9 h-9 rounded-xl bg-[#DCFCE7] text-[#166534] flex items-center justify-center shrink-0">
-            <Database size={18} strokeWidth={1.8} />
+        {/* Área de Conteúdo da Configuração Ativa */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-2xl shadow-xs border border-[#E5E7EB] overflow-hidden">
+            <div className="p-6 border-b border-[#E5E7EB]">
+              <h2 className="text-lg font-bold text-[#1F2937]">Base de Dados (Supabase)</h2>
+              <p className="text-xs text-[#6B7280] mt-1">
+                Mantenha o acervo do escritório atualizado importando planilhas do seu sistema de auditoria.
+              </p>
+            </div>
+            
+            <div className="p-6 sm:p-8 bg-[#FAFAFA]">
+              {/* Componente de upload com Upsert */}
+              <ImportadorPlanilha />
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-bold text-[#131822]">Banco de Dados & Tabela de Processos</h2>
-            <p className="text-xs text-[#166534] font-semibold">Supabase PostgreSQL (Tabela `processos` ativa com chave única `numero_processo`)</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#FEE2E2] text-[#991B1B] flex items-center justify-center shrink-0">
-            <Shield size={18} strokeWidth={1.8} />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-[#131822]">Segurança & Sessão Criptografada</h2>
-            <p className="text-xs text-[#6B7280]">Sessões assinadas com HMAC SHA-256 e cookies blindados `__Host-oc_session`</p>
+          {/* Cards de configuração futuros */}
+          <div className="bg-white rounded-2xl shadow-xs border border-[#E5E7EB] p-6 opacity-60">
+            <h2 className="text-base font-bold text-[#1F2937] mb-1">Exportação de Relatórios</h2>
+            <p className="text-xs text-[#6B7280]">
+              Em breve: Configure backups automáticos semanais em formato CSV.
+            </p>
           </div>
         </div>
       </div>
