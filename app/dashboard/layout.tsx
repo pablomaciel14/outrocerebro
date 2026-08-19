@@ -57,7 +57,7 @@ export default async function DashboardLayout({
         </header>
 
         {/* Conteúdo da Página */}
-        <main className="flex-1 p-6 sm:p-8 overflow-y-auto w-full">
+        <main className="flex-1 p-6 sm:p-8 w-full">
           {children}
         </main>
       </div>
